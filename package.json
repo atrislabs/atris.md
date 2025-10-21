@@ -1,0 +1,19 @@
+{
+  "name": "atris",
+  "version": "1.0.0",
+  "description": "Universal codebase instrumentation for AI agents",
+  "main": "bin/atris.js",
+  "bin": {
+    "atris": "./bin/atris.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["ai", "agents", "codebase", "documentation", "automation"],
+  "author": "Keshav Rao (atrislabs)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atrislabs/atris.md.git"
+  }
+}
