@@ -2,6 +2,9 @@
 
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
+const readline = require('readline');
+const os = require('os');
 
 const command = process.argv[2];
 
@@ -11,6 +14,10 @@ if (!command) {
   console.log('  init     - Initialize ATRIS in current project');
   console.log('  update   - Update local atris.md to latest version');
   console.log('  sync     - Alias for update');
+  console.log('  version  - Show ATRIS version');
+  console.log('  login    - Authenticate with AtrisOS (optional, enables cloud sync)');
+  console.log('  logout   - Remove stored credentials');
+  console.log('  whoami   - Show current authentication status');
   process.exit(0);
 }
 
@@ -19,6 +26,14 @@ if (command === 'init') {
   initAtris();
 } else if (command === 'update' || command === 'sync') {
   syncAtris();
+} else if (command === 'version') {
+  showVersion();
+} else if (command === 'login') {
+  loginAtris();
+} else if (command === 'logout') {
+  logoutAtris();
+} else if (command === 'whoami') {
+  whoamiAtris();
 } else {
   console.log(`Unknown command: ${command}`);
   console.log('Run "atris" without arguments to see available commands');
@@ -140,4 +155,213 @@ function syncAtris() {
   fs.copyFileSync(sourceFile, targetFile);
   console.log('✓ Updated atris.md to latest version');
   console.log('\nRun your AI agent again to regenerate MAP.md and agents with the latest spec.');
+}
+
+// ============================================
+// Authentication & Credentials Management
+// ============================================
+
+function getCredentialsPath() {
+  const homeDir = os.homedir();
+  const atrisDir = path.join(homeDir, '.atris');
+
+  // Create .atris directory if it doesn't exist
+  if (!fs.existsSync(atrisDir)) {
+    fs.mkdirSync(atrisDir, { recursive: true });
+  }
+
+  return path.join(atrisDir, 'credentials.json');
+}
+
+function saveCredentials(token, refreshToken, email, userId) {
+  const credentialsPath = getCredentialsPath();
+  const credentials = {
+    token,
+    refresh_token: refreshToken,
+    email,
+    user_id: userId,
+    created_at: new Date().toISOString()
+  };
+
+  fs.writeFileSync(credentialsPath, JSON.stringify(credentials, null, 2));
+}
+
+function loadCredentials() {
+  const credentialsPath = getCredentialsPath();
+
+  if (!fs.existsSync(credentialsPath)) {
+    return null;
+  }
+
+  try {
+    const data = fs.readFileSync(credentialsPath, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    return null;
+  }
+}
+
+function deleteCredentials() {
+  const credentialsPath = getCredentialsPath();
+
+  if (fs.existsSync(credentialsPath)) {
+    fs.unlinkSync(credentialsPath);
+  }
+}
+
+function openBrowser(url) {
+  const platform = os.platform();
+  let command;
+
+  if (platform === 'darwin') {
+    command = `open "${url}"`;
+  } else if (platform === 'win32') {
+    command = `start "${url}"`;
+  } else {
+    command = `xdg-open "${url}"`;
+  }
+
+  exec(command, (error) => {
+    if (error) {
+      console.log(`\nCouldn't open browser automatically. Please visit:\n${url}`);
+    }
+  });
+}
+
+function promptUser(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function loginAtris() {
+  console.log('🔐 Login to AtrisOS\n');
+
+  // Check if already logged in
+  const existing = loadCredentials();
+  if (existing) {
+    console.log(`Already logged in as: ${existing.email || existing.user_id}`);
+    const confirm = await promptUser('Do you want to login again? (y/N): ');
+    if (confirm.toLowerCase() !== 'y') {
+      console.log('Login cancelled.');
+      process.exit(0);
+    }
+  }
+
+  console.log('Choose login method:');
+  console.log('  1. Browser OAuth (Google/GitHub)');
+  console.log('  2. Manual token paste');
+  console.log('  3. Cancel');
+
+  const choice = await promptUser('\nEnter choice (1-3): ');
+
+  if (choice === '1') {
+    // Browser OAuth flow
+    const apiUrl = 'https://api.atris.ai';
+    const oauthUrl = `${apiUrl}/auth/login?provider=google&next=atris://callback`;
+
+    console.log('\n🌐 Opening browser for OAuth login...');
+    console.log('After authorizing, you\'ll be redirected to a URL that starts with "atris://callback"');
+    console.log('Copy the FULL URL and paste it here.\n');
+
+    openBrowser(oauthUrl);
+
+    const callbackUrl = await promptUser('Paste the callback URL here: ');
+
+    // Parse token from callback URL
+    // Format: atris://callback?token=...&refresh_token=...
+    try {
+      const url = new URL(callbackUrl.replace('atris://', 'http://'));
+      const token = url.searchParams.get('token');
+      const refreshToken = url.searchParams.get('refresh_token');
+
+      if (!token) {
+        console.error('✗ Error: No token found in URL');
+        process.exit(1);
+      }
+
+      // TODO: Validate token by calling /auth/validate
+      // For now, just save it
+      saveCredentials(token, refreshToken, 'oauth-user', 'unknown');
+      console.log('\n✓ Successfully logged in!');
+      console.log(`✓ Credentials saved to ${getCredentialsPath()}`);
+      console.log('\nYou can now use cloud features with atris commands.');
+
+    } catch (error) {
+      console.error('✗ Error: Invalid callback URL format');
+      console.error('Expected format: atris://callback?token=...&refresh_token=...');
+      process.exit(1);
+    }
+
+  } else if (choice === '2') {
+    // Manual token paste
+    console.log('\n📋 Manual Token Entry');
+    console.log('Get your token from: https://app.atris.ai/settings/api\n');
+
+    const token = await promptUser('Paste your API token: ');
+
+    if (!token) {
+      console.error('✗ Error: Token is required');
+      process.exit(1);
+    }
+
+    // Save token (no refresh token for manual entry)
+    saveCredentials(token, null, 'manual-user', 'unknown');
+    console.log('\n✓ Successfully logged in!');
+    console.log(`✓ Credentials saved to ${getCredentialsPath()}`);
+    console.log('\nYou can now use cloud features with atris commands.');
+
+  } else {
+    console.log('Login cancelled.');
+    process.exit(0);
+  }
+}
+
+function logoutAtris() {
+  const credentials = loadCredentials();
+
+  if (!credentials) {
+    console.log('Not currently logged in.');
+    process.exit(0);
+  }
+
+  deleteCredentials();
+  console.log('✓ Successfully logged out');
+  console.log(`✓ Removed credentials from ${getCredentialsPath()}`);
+}
+
+function whoamiAtris() {
+  const credentials = loadCredentials();
+
+  if (!credentials) {
+    console.log('Status: Not logged in');
+    console.log('\nRun "atris login" to authenticate with AtrisOS.');
+    process.exit(0);
+  }
+
+  console.log('Status: Logged in ✓');
+  console.log(`Email: ${credentials.email || 'N/A'}`);
+  console.log(`User ID: ${credentials.user_id || 'N/A'}`);
+  console.log(`Logged in: ${credentials.created_at || 'Unknown'}`);
+  console.log(`\nCredentials: ${getCredentialsPath()}`);
+}
+
+function showVersion() {
+  const packageJsonPath = path.join(__dirname, '..', 'package.json');
+
+  try {
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    console.log(`atris v${packageJson.version}`);
+  } catch (error) {
+    console.error('✗ Error: Could not read package.json');
+    process.exit(1);
+  }
 }

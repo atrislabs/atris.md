@@ -1,0 +1,26 @@
+# Development and test files
+.git
+.gitignore
+node_modules
+test
+personal_docs
+atris/
+.claude/
+*.pdf
+
+# Logs and temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~

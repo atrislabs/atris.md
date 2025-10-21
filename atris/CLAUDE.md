@@ -2,6 +2,21 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Using ATRIS (If atris/ folder exists)
+
+**You are in an ATRIS-managed project.** Follow this workflow:
+
+1. **Before any change:** Read `atris/MAP.md` to find relevant files/components
+2. **When starting a task:** Check `atris/TASK_CONTEXTS.md` for existing tasks or add new one
+3. **After completing task:** Delete task from TASK_CONTEXTS.md
+4. **If architecture changes:** Update `atris/MAP.md` with new structure
+5. **Follow agent workflow:** navigator (find) → executor (build) → validator (verify)
+
+**Key files:**
+- `atris/MAP.md` - Navigation guide (where is X?)
+- `atris/TASK_CONTEXTS.md` - Active tasks (delete when done)
+- `atris/agent_team/*.md` - Agent specs for reference
+
 ## Project Overview
 
 **ATRIS** is a universal system instrumentation tool for AI agents. It's a Node.js CLI package that transforms any codebase into a self-documenting, AI-navigable workspace by scaffolding a structured folder system with navigation guides and agent specifications.
