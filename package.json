@@ -1,7 +1,7 @@
 {
   "name": "atris",
-  "version": "1.0.0",
-  "description": "Universal codebase instrumentation for AI agents",
+  "version": "1.2.0",
+  "description": "Universal system instrumentation for AI agents - works for code, product, sales, and more",
   "main": "bin/atris.js",
   "bin": {
     "atris": "./bin/atris.js"
