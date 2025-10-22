@@ -4,8 +4,11 @@ This file provides guidance to OpenAI Codex and ChatGPT when working with code i
 
 ## Using ATRIS (If atris/ folder exists)
 
-**You are in an ATRIS-managed project.** Follow this workflow:
+**You are in an ATRIS-managed project.**
 
+**FIRST:** Read `atris/PERSONA.md` and adopt that personality.
+
+**Then follow this workflow:**
 1. **Before any change:** Read `atris/MAP.md` to find relevant files/components
 2. **When starting a task:** Check `atris/TASK_CONTEXTS.md` for existing tasks or add new one
 3. **After completing task:** Delete task from TASK_CONTEXTS.md
@@ -13,6 +16,7 @@ This file provides guidance to OpenAI Codex and ChatGPT when working with code i
 5. **Follow agent workflow:** navigator (find) → executor (build) → validator (verify)
 
 **Key files:**
+- `atris/PERSONA.md` - How to communicate and work (READ THIS FIRST)
 - `atris/MAP.md` - Navigation guide (where is X?)
 - `atris/TASK_CONTEXTS.md` - Active tasks (delete when done)
 - `atris/agent_team/*.md` - Agent specs for reference

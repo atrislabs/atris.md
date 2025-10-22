@@ -1,19 +1,32 @@
 {
   "name": "atris",
-  "version": "1.3.0",
+  "version": "1.4.3",
   "description": "Universal system instrumentation for AI agents - works for code, product, sales, and more",
   "main": "bin/atris.js",
   "bin": {
-    "atris": "./bin/atris.js"
+    "atris": "bin/atris.js"
   },
+  "files": [
+    "bin/",
+    "atris.md",
+    "GETTING_STARTED.md",
+    "PERSONA.md",
+    "atris/agent_team/"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["ai", "agents", "codebase", "documentation", "automation"],
+  "keywords": [
+    "ai",
+    "agents",
+    "codebase",
+    "documentation",
+    "automation"
+  ],
   "author": "Keshav Rao (atrislabs)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/atrislabs/atris.md.git"
+    "url": "git+https://github.com/atrislabs/atris.md.git"
   }
 }

@@ -1,10 +1,10 @@
-# atris.md — Universal System Instrumentation Blueprint v1.3.0
+# atris.md — A new system for an AI agent team
 
-> **One markdown file. Drop it anywhere. Agents scaffold a fully-instrumented system in <10 minutes.**
+> **Drop this markdown file anywhere. Scaffold and operate an AI agent team.**
 
-This spec defines how to transform any system (codebase, product, sales process, research) into a self-documenting, AI-navigable workspace. Standard structure: `atris/` folder with MAP.md, agent_team/, and TASK_CONTEXTS.md = 10x faster collaboration.
+This spec defines how to transform any system (codebase, product, sales process, research) into a self-documenting, AI-navigable workspace. Standard structure: `atris/` folder with MAP.md, agent_team/, and TASK_CONTEXTS.md.
 
-**See [`ATRIS_NOTES.md`](./ATRIS_NOTES.md) for vision, roadmap, and future phases (sync, sessions, agent crews).**
+**Workflow:** Daily logs → Navigator plans → Executor builds → Validator reviews.
 
 ---
 
@@ -27,24 +27,27 @@ This spec defines how to transform any system (codebase, product, sales process,
    - Key files with line-count ranges (e.g., `auth.ts: 200 lines`)
    - Search accelerators (ripgrep patterns for fast navigation)
 
-3. **Create `/atris/MAP.md`** with these sections:
+3. **Create `/atris/MAP.md`** with ONLY these sections (no extras):
    - **Quick Reference Index** (top) — Grep-friendly shortcuts (e.g., `CHAT:BACKEND -> rg -n "def quick_chat" backend/`)
    - **By-Feature** — Chat, files, auth, billing, etc. (answer: "where is feature X?")
    - **By-Concern** — State management, API layer, UI system, etc. (answer: "where is concern Y?")
    - **Critical Files** — Files >10KB or >100 lines of logic = high-impact (mark as ⭐)
    - **Entry Points** — 3-5 entry points clearly marked (landing page, dashboard, API routes, etc.)
 
-4. **Quality Checklist Before Outputting:**
-   - [ ] Can I run `rg -l "TODO|FIXME"` and navigate to each via line numbers in MAP?
+4. **DO NOT include this:**
+   - COMPLEX Architecture Flows unless specified (keep it simple to understand)
+   - TODOs/Improvements (those go in TASK_CONTEXTS.md)
+   - Project stats (unnecessary metadata)
+
+5. **Quality Checklist Before Outputting:**
    - [ ] Does every major file/component have a one-liner explaining its purpose?
-   - [ ] Are there 10+ search patterns I can use to navigate quickly?
    - [ ] Can a new person answer "where is X?" in <30 seconds using this map?
 
-5. **Output:** `/atris/MAP.md` (target: 500-800 lines for large systems; scale to project size)
+6. **Output:** `/atris/MAP.md` (target: 300-500 lines for large systems; scale to project size)
 
 ---
 
-## Phase 2: Spawn 3 Foundation Agents
+## Phase 2: Spawning Foundational Agents
 
 After MAP.md exists, generate agent specs in `/atris/agent_team/` from MAP insights. Each agent has explicit guardrails.
 
@@ -101,7 +104,7 @@ After MAP.md exists, generate agent specs in `/atris/agent_team/` from MAP insig
 
 ### Agent 3: **validator.md** (in `/atris/agent_team/`)
 
-- **Role:** Quality Gatekeeper & Architecture Guardian
+- **Role:** Quality Gatekeeper
 - **Activation Prompt:**
   ```
   You are the validator. After ANY change, verify safety and accuracy.
@@ -228,11 +231,27 @@ After MAP.md exists, generate agent specs in `/atris/agent_team/` from MAP insig
 - [ ] navigator answers 5 test questions with exact references
 - [ ] executor completes a sample task without regressions
 - [ ] validator successfully detects and blocks a breaking change
-- [ ] MAP.md is accurate and stays in sync with the system
+- [ ] MAP.md is accurate and stays in sync with the system, especially after changes. agents will change.
 
 ---
 
-## Phase 5: Future Roadmap (Vision)
+## Phase 5: Daily Workflow
+
+**How the System Operates Day-to-Day:**
+
+1. **Brain Dump** — Run `atris log`, type thoughts into `## Inbox` section (unfiltered, no structure required)
+
+2. **Navigator Reviews** — Processes inbox entries, identifies patterns, creates tasks in TASK_CONTEXTS.md with MAP.md context
+
+3. **Executor Builds** — Takes task → ASCII visualization → get approval → build step-by-step → validate alignment
+
+4. **Validator Reviews** — Ultrathinks (3x) → tests → auto-fixes bugs → cleans up (deletes completed tasks, target: 0) → updates MAP.md → moves log to Completed ✅ → extracts lessons
+
+**Daily Goal:** Inbox zero. All thoughts processed, tasks executed, docs updated.
+
+---
+
+## Phase 6: Future Roadmap (Vision)
 
 **See [`ATRIS_NOTES.md`](./ATRIS_NOTES.md) for full roadmap. Preview:**
 

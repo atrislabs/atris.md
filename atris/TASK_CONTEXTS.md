@@ -1,37 +1,48 @@
 # TASK_CONTEXTS.md
 
-> **Last updated:** 2025-10-20
+> **Last updated:** 2025-10-22
 
 ---
 
-## Completed ✅
+## Purpose
 
-- **T-001:** Version command (`atris version`)
-- **T-006:** .npmignore (package size: 9.8 kB)
-- **T-008:** README.md (35 lines, zero fluff)
-- **T-011:** Agent spec optimization (72% reduction)
+This file tracks **active tasks** for parallel agent/human work. Navigator creates tasks in Backlog, agents claim them to In Progress, validator cleans them up after completion.
 
----
-
-## Future Ideas (v2.0.0+)
-
-Potential features if there's actual demand. Not priorities.
-
-**T-004: LLM Integration**
-- Auto-generate MAP.md on `atris init --llm`
-- Breaks zero-dependency principle (adds @anthropic-ai/sdk)
-- Complex: 4-8 hours
-
-**T-009: Build Validation**
-- Validator agent runs builds automatically
-- Attempts smart fixes within guardrails
-- Medium complexity: 2-4 hours
-
-**T-010: Feature Agent**
-- New agent type for end-to-end feature workflows
-- Orchestrates task generation → execution → validation
-- High complexity: 4-6 hours
+**Rule:** Target state = 0 tasks. Tasks flow: Backlog → In Progress → Completed (deleted).
 
 ---
 
-**"A lil speed car of markdown files. New software for the AI age."** 🚗💨
+## Backlog
+
+(Unclaimed tasks ready for execution)
+
+(No active tasks)
+
+---
+
+## In Progress
+
+(Tasks currently being worked on - claim by moving from Backlog + add your name/timestamp)
+
+Format: `**Claimed by:** [Agent/Name] at [Time]`
+
+---
+
+## Instructions
+
+**Navigator:** Extract ideas from `logs/YYYY/YYYY-MM-DD.md` Inbox section → create task in Backlog with context (file:line refs from MAP.md)
+
+**Executor (claiming):**
+1. Pick task from Backlog
+2. Move to "In Progress" section
+3. Add: `**Claimed by:** [Your Name/Agent] at [Timestamp]`
+4. Build the task
+5. When done, leave in "In Progress" for validator
+
+**Validator:** After completion → update MAP.md → add journal timestamp → **delete task entirely from this file**
+
+**Parallel work:** Multiple agents can work simultaneously. Each claims different tasks. First to move task to "In Progress" owns it.
+
+---
+
+**Target state:** Empty. Tasks flow: Backlog → In Progress (claimed) → Completed (deleted). File should return to 0.

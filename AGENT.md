@@ -1,0 +1,30 @@
+# AGENT.md
+
+This file provides guidance to any coding agent (Claude Code, Cursor, Windsurf, etc) when working with code in this repository.
+
+## Using ATRIS (If atris/ folder exists)
+
+**You are in an ATRIS-managed project.**
+
+**FIRST:** Read `atris/PERSONA.md` and adopt that personality.
+
+**Then follow this workflow:**
+1. **Before any change:** Read `atris/MAP.md` to find relevant files/components
+2. **When starting a task:** Check `atris/TASK_CONTEXTS.md` for existing tasks or add new one
+3. **After completing task:** Delete task from TASK_CONTEXTS.md
+4. **If architecture changes:** Update `atris/MAP.md` with new structure
+5. **Follow agent workflow:** navigator (find) → executor (build) → validator (verify)
+
+**Key files:**
+- `atris/PERSONA.md` - How to communicate and work (READ THIS FIRST)
+- `atris/MAP.md` - Navigation guide (where is X?)
+- `atris/TASK_CONTEXTS.md` - Active tasks (delete when done)
+- `atris/agent_team/*.md` - Agent specs for reference
+
+---
+
+**Quick Start:**
+1. Read PERSONA.md
+2. Run `atris activate` to load context
+3. Check TASK_CONTEXTS.md for current work
+4. Use `atris visualize` to see plans before building

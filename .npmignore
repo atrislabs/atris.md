@@ -4,9 +4,17 @@
 node_modules
 test
 personal_docs
-atris/
 .claude/
 *.pdf
+
+# Ship all template .md files in atris/
+# Only block user-generated runtime files
+atris/logs/
+atris/MAP.md
+atris/TASK_CONTEXTS.md
+atris/.config
+atris/.log_sync_state.json
+atris/LESSONS.md
 
 # Logs and temporary files
 *.log
