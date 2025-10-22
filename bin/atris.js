@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, spawnSync } = require('child_process');
 const readline = require('readline');
 const os = require('os');
 const https = require('https');
@@ -11,13 +11,14 @@ const crypto = require('crypto');
 
 const command = process.argv[2];
 
-if (!command) {
+function showHelp() {
   console.log('Usage: atris <command>');
   console.log('Commands:');
   console.log('  init       - Initialize ATRIS in current project');
   console.log('  agent      - Select agent for this workspace');
   console.log('  activate   - Load context and start chat with ATRIS agents');
   console.log('  status     - Show system state (tasks, inbox, recent completions)');
+  console.log('  analytics  - Show insights from journal (velocity, trends, patterns)');
   console.log('  plan       - Activate navigator (brainstorm and create tasks)');
   console.log('  do         - Activate executor (build tasks from TASK_CONTEXTS)');
   console.log('  review     - Activate validator (verify, test, clean docs)');
@@ -31,6 +32,11 @@ if (!command) {
   console.log('  login      - Authenticate with AtrisOS (optional, enables cloud sync)');
   console.log('  logout     - Remove stored credentials');
   console.log('  whoami     - Show current authentication status');
+  console.log('  help       - Show this help message');
+}
+
+if (!command || command === 'help' || command === '--help' || command === '-h') {
+  showHelp();
   process.exit(0);
 }
 
@@ -80,9 +86,11 @@ if (command === 'init') {
   reviewAtris();
 } else if (command === 'status') {
   statusAtris();
+} else if (command === 'analytics') {
+  analyticsAtris();
 } else {
   console.log(`Unknown command: ${command}`);
-  console.log('Run "atris" without arguments to see available commands');
+  console.log('Run "atris help" to see available commands');
   process.exit(1);
 }
 
@@ -273,7 +281,7 @@ function ensureLogDirectory() {
 }
 
 function createLogFile(logFile, dateFormatted) {
-  const initialContent = `# Log — ${dateFormatted}\n\n## Completed ✅\n\n---\n\n## Inbox\n\n`;
+  const initialContent = `# Log — ${dateFormatted}\n\n## Completed ✅\n\n---\n\n## In Progress 🔄\n\n---\n\n## Backlog\n\n---\n\n## Notes\n\n---\n\n## Inbox\n\n`;
   fs.writeFileSync(logFile, initialContent);
 }
 
@@ -460,6 +468,10 @@ async function logSyncAtris() {
         console.log(`   Local modified: ${localModified}`);
         console.log('   Type "y" to replace your local file with the web version, or "n" to keep local changes and push them to the web.');
         console.log('');
+
+        if (typeof remoteContent === 'string') {
+          showLogDiff(logFile, remoteContent);
+        }
 
         const answer = await promptUser('Overwrite local with web version? (y/n): ');
 
@@ -1184,6 +1196,55 @@ function computeContentHash(content) {
   return crypto.createHash('sha256').update(normalized).digest('hex');
 }
 
+function showLogDiff(localPath, remoteContent) {
+  let tmpDir;
+  try {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'atris-diff-'));
+    const remotePath = path.join(tmpDir, 'remote.md');
+    fs.writeFileSync(remotePath, remoteContent, 'utf8');
+
+    const diffCommands = [
+      { cmd: 'git', args: ['--no-pager', 'diff', '--no-index', '--color=always', '--', localPath, remotePath] },
+      { cmd: 'diff', args: ['-u', localPath, remotePath] },
+    ];
+
+    let shown = false;
+    for (const { cmd, args } of diffCommands) {
+      const result = spawnSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+      if (result.error || result.status === 127) {
+        continue;
+      }
+
+      const output = `${result.stdout || ''}${result.stderr || ''}`.trimEnd();
+      if (output) {
+        console.log('─────────────────────────────────────────────────────────────');
+        console.log('Diff (web -> local):');
+        process.stdout.write(output.endsWith('\n') ? output : `${output}\n`);
+        console.log('─────────────────────────────────────────────────────────────');
+        shown = true;
+        break;
+      }
+    }
+
+    if (!shown) {
+      console.log('─────────────────────────────────────────────────────────────');
+      console.log('Diff: (no textual diff available; files may be identical or differ only in whitespace)');
+      console.log('─────────────────────────────────────────────────────────────');
+    }
+  } catch (error) {
+    console.log('─────────────────────────────────────────────────────────────');
+    console.log(`Unable to show diff automatically (${error.message || error}).`);
+    console.log('─────────────────────────────────────────────────────────────');
+  } finally {
+    if (tmpDir) {
+      try {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      } catch (_) {
+        // ignore cleanup errors
+      }
+    }
+  }
+}
 // ============================================
 // Agent Selection
 // ============================================
@@ -1921,4 +1982,140 @@ function streamProChat(url, token, body) {
     req.write(body);
     req.end();
   });
+}
+
+function analyticsAtris() {
+  const targetDir = path.join(process.cwd(), 'atris');
+
+  if (!fs.existsSync(targetDir)) {
+    console.log('✗ atris/ folder not found. Run "atris init" first.');
+    process.exit(1);
+  }
+
+  // Get date range (today + last 7 days)
+  const today = new Date();
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    dates.push(date);
+  }
+
+  // Parse journals and collect data
+  let totalCompletions = 0;
+  let todayCompletions = 0;
+  let todayInbox = 0;
+  let oldestInbox = 0;
+  const completionsByDay = {};
+  const hourCounts = {};
+
+  dates.forEach((date, index) => {
+    const year = date.getFullYear();
+    const dateFormatted = date.toISOString().split('T')[0];
+    const logPath = path.join(targetDir, 'logs', year.toString(), `${dateFormatted}.md`);
+
+    if (!fs.existsSync(logPath)) {
+      completionsByDay[dateFormatted] = 0;
+      return;
+    }
+
+    const content = fs.readFileSync(logPath, 'utf8');
+
+    // Count completions (C# pattern)
+    const completionMatches = content.match(/- \*\*C\d+:/g);
+    const completionCount = completionMatches ? completionMatches.length : 0;
+    completionsByDay[dateFormatted] = completionCount;
+    totalCompletions += completionCount;
+
+    if (index === 0) {
+      todayCompletions = completionCount;
+
+      // Count today's inbox
+      const inboxMatch = content.match(/## Inbox\n([\s\S]*?)(?=\n##|---)/);
+      if (inboxMatch && inboxMatch[1].trim()) {
+        const inboxMatches = inboxMatch[1].match(/- \*\*I\d+:/g);
+        todayInbox = inboxMatches ? inboxMatches.length : 0;
+      }
+    }
+
+    if (index === 6) {
+      // Count oldest day's inbox for trend
+      const inboxMatch = content.match(/## Inbox\n([\s\S]*?)(?=\n##|---)/);
+      if (inboxMatch && inboxMatch[1].trim()) {
+        const inboxMatches = inboxMatch[1].match(/- \*\*I\d+:/g);
+        oldestInbox = inboxMatches ? inboxMatches.length : 0;
+      }
+    }
+
+    // Parse timestamps for productivity hours
+    const timestampMatches = content.match(/\*\*(\d{2}):(\d{2}):(\d{2})\*\*/g);
+    if (timestampMatches) {
+      timestampMatches.forEach(ts => {
+        const hour = parseInt(ts.match(/\d{2}/)[0]);
+        hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+      });
+    }
+  });
+
+  // Calculate metrics
+  const velocity = (totalCompletions / 7).toFixed(1);
+  const inboxTrend = todayInbox > oldestInbox ? 'Growing ⬆' :
+                     todayInbox < oldestInbox ? 'Shrinking ⬇' :
+                     'Stable →';
+
+  // Find most productive hour
+  let mostProductiveHour = null;
+  let maxCount = 0;
+  Object.keys(hourCounts).forEach(hour => {
+    if (hourCounts[hour] > maxCount) {
+      maxCount = hourCounts[hour];
+      mostProductiveHour = hour;
+    }
+  });
+
+  const productiveHours = mostProductiveHour !== null ?
+    `${mostProductiveHour}:00 - ${(parseInt(mostProductiveHour) + 1) % 24}:00` :
+    'No data';
+
+  // Display analytics
+  const dateFormatted = today.toISOString().split('T')[0];
+  console.log('');
+  console.log('┌─────────────────────────────────────────────────────────────┐');
+  console.log(`│ ATRIS Analytics — ${dateFormatted}${' '.repeat(33 - dateFormatted.length)}│`);
+  console.log('└─────────────────────────────────────────────────────────────┘');
+  console.log('');
+
+  // Today's performance
+  console.log(`📊 Today's Performance`);
+  console.log(`   Completions: ${todayCompletions}`);
+  console.log(`   Inbox items: ${todayInbox}`);
+  console.log('');
+
+  // Weekly trends
+  console.log(`📈 Weekly Trends (Last 7 Days)`);
+  console.log(`   Total completions: ${totalCompletions}`);
+  console.log(`   Average velocity: ${velocity} completions/day`);
+  console.log(`   Inbox trend: ${inboxTrend}`);
+  console.log('');
+
+  // Productivity patterns
+  console.log(`⏰ Productivity Patterns`);
+  console.log(`   Most active hour: ${productiveHours}`);
+  console.log(`   Activity count: ${maxCount} timestamps`);
+  console.log('');
+
+  // Daily breakdown
+  console.log(`📅 Daily Breakdown`);
+  const sortedDates = Object.keys(completionsByDay).sort().reverse();
+  sortedDates.forEach((date, index) => {
+    const count = completionsByDay[date];
+    const bar = '█'.repeat(count);
+    const label = index === 0 ? ' (today)' : '';
+    console.log(`   ${date}: ${bar} ${count}${label}`);
+  });
+  console.log('');
+
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('💡 Insight: This data syncs to backend via "atris log sync"');
+  console.log('');
 }
