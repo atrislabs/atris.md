@@ -1,6 +1,8 @@
-# ATRIS
+# Atris
 
-Universal system instrumentation for AI agents. Transforms any codebase into a self-documenting, AI-navigable workspace with exact file:line references.
+Drop one command. Your team of AI agents instantly know your entire codebase.
+
+No more "where is the auth logic?" or "which file handles payments?" Atris gives AI agents a navigation system with exact file:line answers in seconds.
 
 ## Install
 
