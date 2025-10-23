@@ -33,7 +33,7 @@ Takes ~10 minutes. Works for code, product, sales, research—any system.
 atris update
 ```
 
-Syncs local `atris.md` to latest version.
+Updates local files (atris.md, PERSONA.md, GETTING_STARTED.md, agent templates) to latest version from npm package.
 
 ## Talk to agents
 

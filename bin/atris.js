@@ -26,8 +26,7 @@ function showHelp() {
   console.log('  visualize  - Break down ideas from inbox with 3-4 sentences + ASCII diagram');
   console.log('  log        - View or append to today\'s log');
   console.log('  log sync   - Sync today\'s log to Atris journal');
-  console.log('  update     - Update local atris.md to latest version');
-  console.log('  sync       - Alias for update');
+  console.log('  update     - Update local files from package to latest version');
   console.log('  version    - Show ATRIS version');
   console.log('  login      - Authenticate with AtrisOS (optional, enables cloud sync)');
   console.log('  logout     - Remove stored credentials');
@@ -59,7 +58,7 @@ if (command === 'init') {
   }
 } else if (command === 'activate') {
   activateAtris();
-} else if (command === 'update' || command === 'sync') {
+} else if (command === 'update') {
   syncAtris();
 } else if (command === 'chat') {
   chatAtris()
@@ -1343,19 +1342,25 @@ async function activateAtris() {
     process.exit(1);
   }
 
-  // Check agent selected
   const config = loadConfig();
-  if (!config.agent_id) {
-    console.error('✗ Error: No agent selected. Run "atris agent" first.');
-    process.exit(1);
+  const credentials = loadCredentials();
+
+  const hasAgent = Boolean(config.agent_id);
+  const hasCredentials = Boolean(credentials && credentials.token);
+  const agentLabel = hasAgent ? (config.agent_name || config.agent_id) : null;
+
+  if (hasAgent) {
+    console.log(`✓ Agent ready: ${agentLabel}`);
+  } else {
+    console.log('⚠ No agent selected. Run "atris agent" to set one when you want to chat.');
   }
 
-  // Check credentials
-  const credentials = loadCredentials();
-  if (!credentials || !credentials.token) {
-    console.error('✗ Error: Not logged in. Run "atris login" first.');
-    process.exit(1);
+  if (hasCredentials) {
+    console.log('✓ Logged in to AtrisOS');
+  } else {
+    console.log('⚠ Not logged in. Run "atris login" to enable cloud sync and agent chat.');
   }
+  console.log('');
 
   // Read today's log
   const { logFile, dateFormatted } = getLogPath();
@@ -1387,7 +1392,11 @@ async function activateAtris() {
   console.log('');
   console.log('✓ Context loaded');
   console.log('');
-  console.log('Use "atris chat" to chat with your agent or "atris log" to edit your journal.');
+  if (hasAgent && hasCredentials) {
+    console.log('Use "atris chat" to chat with your agent or "atris log" to edit your journal.');
+  } else {
+    console.log('Use "atris log" to edit your journal. When ready, run "atris agent" and "atris login" to chat with agents.');
+  }
 }
 
 async function chatAtris() {
