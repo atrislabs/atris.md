@@ -23,6 +23,7 @@ function showHelp() {
   console.log('  do         - Activate executor (build tasks from TASK_CONTEXTS)');
   console.log('  review     - Activate validator (verify, test, clean docs)');
   console.log('  chat       - Interactive chat with ATRIS agents');
+  console.log('  autopilot  - Guided plan → do → review loop with success criteria');
   console.log('  visualize  - Break down ideas from inbox with 3-4 sentences + ASCII diagram');
   console.log('  log        - View or append to today\'s log');
   console.log('  log sync   - Sync today\'s log to Atris journal');
@@ -83,6 +84,16 @@ if (command === 'init') {
   doAtris();
 } else if (command === 'review') {
   reviewAtris();
+} else if (command === 'autopilot') {
+  autopilotAtris()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      if (error && error.__autopilotAbort) {
+        process.exit(0);
+      }
+      console.error(`✗ Autopilot failed: ${error.message || error}`);
+      process.exit(1);
+    });
 } else if (command === 'status') {
   statusAtris();
 } else if (command === 'analytics') {
@@ -258,7 +269,9 @@ function getLogPath(dateStr) {
   const targetDir = path.join(process.cwd(), 'atris');
   const date = dateStr ? new Date(dateStr) : new Date();
   const year = date.getFullYear();
-  const dateFormatted = date.toISOString().split('T')[0]; // YYYY-MM-DD
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateFormatted = `${year}-${month}-${day}`; // YYYY-MM-DD in local time
 
   const logsDir = path.join(targetDir, 'logs');
   const yearDir = path.join(logsDir, year.toString());
@@ -461,41 +474,96 @@ async function logSyncAtris() {
           return;
         }
 
-        // Remote is newer - prompt user
-        console.log('⚠️  Web version is newer than local version');
-        console.log(`   Remote updated: ${remoteUpdatedAt}`);
-        console.log(`   Local modified: ${localModified}`);
-        console.log('   Type "y" to replace your local file with the web version, or "n" to keep local changes and push them to the web.');
-        console.log('');
+        // Try section-based merge
+        try {
+          const localSections = parseJournalSections(normalizedLocal);
+          const remoteSections = parseJournalSections(normalizedRemote || '');
+          const { merged, conflicts } = mergeSections(localSections, remoteSections, knownRemoteHash);
 
-        if (typeof remoteContent === 'string') {
-          showLogDiff(logFile, remoteContent);
-        }
+          if (conflicts.length === 0) {
+            // Clean merge - auto-merge and continue
+            const mergedContent = reconstructJournal(merged);
+            fs.writeFileSync(logFile, mergedContent, 'utf8');
+            console.log('✓ Auto-merged web and local changes');
+            console.log(`   Merged sections: ${Object.keys(merged).filter(k => k !== '__header__').join(', ')}`);
+            // Update local content for push
+            localContent = mergedContent;
+          } else {
+            // Conflicts detected - prompt user
+            console.log('⚠️  Conflicting changes in same section(s)');
+            console.log(`   Conflicts: ${conflicts.join(', ')}`);
+            console.log(`   Remote updated: ${remoteUpdatedAt}`);
+            console.log(`   Local modified: ${localModified}`);
+            console.log('   Type "y" to replace local with web version, or "n" to keep local changes.');
+            console.log('');
 
-        const answer = await promptUser('Overwrite local with web version? (y/n): ');
-
-        if (answer && answer.toLowerCase() === 'y') {
-          // Pull remote content
-          const pulledContent = existing.data?.content || '';
-          fs.writeFileSync(logFile, pulledContent, 'utf8');
-          remoteHash = computeContentHash(pulledContent);
-          console.log('✓ Local journal updated from web');
-          console.log(`🗒️  File: ${path.relative(process.cwd(), logFile)}`);
-          if (remoteUpdatedAt) {
-            const remoteDate = new Date(remoteUpdatedAt);
-            if (!Number.isNaN(remoteDate.getTime())) {
-              fs.utimesSync(logFile, remoteDate, remoteDate);
+            if (typeof remoteContent === 'string') {
+              showLogDiff(logFile, remoteContent);
             }
-            const state = loadLogSyncState();
-            state[dateFormatted] = {
-              updated_at: remoteUpdatedAt,
-              hash: remoteHash || computeContentHash(pulledContent),
-            };
-            saveLogSyncState(state);
+
+            const answer = await promptUser('Overwrite local with web version? (y/n): ');
+
+            if (answer && answer.toLowerCase() === 'y') {
+              // Pull remote content
+              const pulledContent = existing.data?.content || '';
+              fs.writeFileSync(logFile, pulledContent, 'utf8');
+              remoteHash = computeContentHash(pulledContent);
+              console.log('✓ Local journal updated from web');
+              console.log(`🗒️  File: ${path.relative(process.cwd(), logFile)}`);
+              if (remoteUpdatedAt) {
+                const remoteDate = new Date(remoteUpdatedAt);
+                if (!Number.isNaN(remoteDate.getTime())) {
+                  fs.utimesSync(logFile, remoteDate, remoteDate);
+                }
+                const state = loadLogSyncState();
+                state[dateFormatted] = {
+                  updated_at: remoteUpdatedAt,
+                  hash: remoteHash || computeContentHash(pulledContent),
+                };
+                saveLogSyncState(state);
+              }
+              return;
+            } else {
+              console.log('⏩ Keeping local version, will push to web');
+            }
           }
-          return;
-        } else {
-          console.log('⏩ Keeping local version, will push to web');
+        } catch (parseError) {
+          // Fallback to old prompt behavior if parsing fails
+          console.log('⚠️  Web version is newer than local version');
+          console.log(`   Remote updated: ${remoteUpdatedAt}`);
+          console.log(`   Local modified: ${localModified}`);
+          console.log('   Type "y" to replace your local file with the web version, or "n" to keep local changes and push them to the web.');
+          console.log('');
+
+          if (typeof remoteContent === 'string') {
+            showLogDiff(logFile, remoteContent);
+          }
+
+          const answer = await promptUser('Overwrite local with web version? (y/n): ');
+
+          if (answer && answer.toLowerCase() === 'y') {
+            // Pull remote content
+            const pulledContent = existing.data?.content || '';
+            fs.writeFileSync(logFile, pulledContent, 'utf8');
+            remoteHash = computeContentHash(pulledContent);
+            console.log('✓ Local journal updated from web');
+            console.log(`🗒️  File: ${path.relative(process.cwd(), logFile)}`);
+            if (remoteUpdatedAt) {
+              const remoteDate = new Date(remoteUpdatedAt);
+              if (!Number.isNaN(remoteDate.getTime())) {
+                fs.utimesSync(logFile, remoteDate, remoteDate);
+              }
+              const state = loadLogSyncState();
+              state[dateFormatted] = {
+                updated_at: remoteUpdatedAt,
+                hash: remoteHash || computeContentHash(pulledContent),
+              };
+              saveLogSyncState(state);
+            }
+            return;
+          } else {
+            console.log('⏩ Keeping local version, will push to web');
+          }
         }
       } else if (remoteTime > localTime && remoteMatchesKnown) {
         console.log('⚠️  Web timestamp ahead due to clock skew (matches last sync); pushing local changes.');
@@ -1195,6 +1263,98 @@ function computeContentHash(content) {
   return crypto.createHash('sha256').update(normalized).digest('hex');
 }
 
+function parseJournalSections(content) {
+  const sections = {};
+  const lines = content.split('\n');
+  let currentSection = '__header__';
+  let currentContent = [];
+
+  for (const line of lines) {
+    if (line.startsWith('## ')) {
+      // Save previous section
+      if (currentContent.length > 0 || currentSection === '__header__') {
+        sections[currentSection] = currentContent.join('\n');
+      }
+      // Start new section
+      currentSection = line.substring(3).trim();
+      currentContent = [line];
+    } else {
+      currentContent.push(line);
+    }
+  }
+
+  // Save last section
+  if (currentContent.length > 0) {
+    sections[currentSection] = currentContent.join('\n');
+  }
+
+  return sections;
+}
+
+function mergeSections(localSections, remoteSections, knownRemoteHash) {
+  const merged = {};
+  const conflicts = [];
+
+  // Get all unique section names
+  const allSections = new Set([...Object.keys(localSections), ...Object.keys(remoteSections)]);
+
+  for (const section of allSections) {
+    const localContent = localSections[section] || '';
+    const remoteContent = remoteSections[section] || '';
+
+    if (localContent === remoteContent) {
+      // Same content, use either
+      merged[section] = localContent;
+    } else if (!remoteContent) {
+      // Only in local, keep local
+      merged[section] = localContent;
+    } else if (!localContent) {
+      // Only in remote, keep remote
+      merged[section] = remoteContent;
+    } else {
+      // Both exist but differ - check if remote matches known state
+      const remoteHash = computeContentHash(remoteContent);
+      if (knownRemoteHash && remoteHash === knownRemoteHash) {
+        // Remote hasn't changed since last sync, prefer local
+        merged[section] = localContent;
+      } else {
+        // Real conflict - mark for user review
+        conflicts.push(section);
+        merged[section] = localContent; // Default to local
+      }
+    }
+  }
+
+  return { merged, conflicts };
+}
+
+function reconstructJournal(sections) {
+  const parts = [];
+
+  // Header first
+  if (sections['__header__']) {
+    parts.push(sections['__header__']);
+  }
+
+  // Then all other sections in order (preserve original order where possible)
+  const sectionOrder = ['Completed ✅', 'In Progress 🔄', 'Backlog', 'Notes', 'Inbox', 'Timestamps', 'Lessons Learned'];
+
+  for (const section of sectionOrder) {
+    if (sections[section]) {
+      parts.push(sections[section]);
+    }
+  }
+
+  // Add any remaining sections not in the standard order
+  for (const [section, content] of Object.entries(sections)) {
+    if (section !== '__header__' && !sectionOrder.includes(section)) {
+      parts.push(content);
+    }
+  }
+
+  return parts.join('\n');
+}
+
 function showLogDiff(localPath, remoteContent) {
   let tmpDir;
   try {
@@ -1601,6 +1761,410 @@ function visualizeAtris() {
   console.log('─────────────────────────────────────────');
   console.log('✓ Ready to pass to agents with approval gate enabled.');
   console.log('');
+}
+
+async function autopilotAtris() {
+  const targetDir = path.join(process.cwd(), 'atris');
+  if (!fs.existsSync(targetDir)) {
+    throw new Error('atris/ folder not found. Run "atris init" first.');
+  }
+
+  const navigatorFile = path.join(targetDir, 'agent_team', 'navigator.md');
+  const executorFile = path.join(targetDir, 'agent_team', 'executor.md');
+  const validatorFile = path.join(targetDir, 'agent_team', 'validator.md');
+
+  const missingSpecs = [];
+  if (!fs.existsSync(navigatorFile)) missingSpecs.push('navigator.md');
+  if (!fs.existsSync(executorFile)) missingSpecs.push('executor.md');
+  if (!fs.existsSync(validatorFile)) missingSpecs.push('validator.md');
+
+  if (missingSpecs.length > 0) {
+    throw new Error(`Missing agent spec(s): ${missingSpecs.join(', ')}. Run "atris init" to restore them.`);
+  }
+
+  ensureLogDirectory();
+  const { logFile, dateFormatted } = getLogPath();
+  if (!fs.existsSync(logFile)) {
+    createLogFile(logFile, dateFormatted);
+  }
+
+  console.log('');
+  console.log('┌─────────────────────────────────────────────────────────────┐');
+  console.log('│ ATRIS Autopilot — plan → do → review loop                   │');
+  console.log('└─────────────────────────────────────────────────────────────┘');
+  console.log('');
+  console.log(`Date: ${dateFormatted}`);
+  console.log('Type "exit" at any prompt to cancel.');
+  console.log('');
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const ask = async (promptText, options = {}) => {
+    const { allowEmpty = false } = options;
+    while (true) {
+      const answer = await new Promise((resolve) => rl.question(promptText, resolve));
+      const trimmed = answer.trim();
+      if (trimmed.toLowerCase() === 'exit') {
+        throw autopilotAbortError();
+      }
+      if (!allowEmpty && trimmed === '') {
+        console.log('Please enter a value (or type "exit" to abort).');
+        continue;
+      }
+      return trimmed;
+    }
+  };
+
+  const askYesNo = async (promptText) => {
+    while (true) {
+      const response = (await ask(promptText)).toLowerCase();
+      if (response === 'y' || response === 'yes') return true;
+      if (response === 'n' || response === 'no') return false;
+      console.log('Please answer with "y" or "n" (or type "exit" to abort).');
+    }
+  };
+
+  let selectedInboxItem = null;
+  let visionSummary = '';
+  let sourceLabel = 'Ad-hoc';
+
+  try {
+    const initialLogContent = fs.readFileSync(logFile, 'utf8');
+    let inboxItems = parseInboxItems(initialLogContent);
+
+    if (inboxItems.length > 0) {
+      console.log('Choose a vision source:');
+      console.log('  1. Select an item from today\'s Inbox');
+      console.log('  2. Enter a new idea');
+      console.log('');
+
+      let choice;
+      while (true) {
+        choice = await ask('Choice (1-2): ');
+        if (choice === '1' || choice === '2') {
+          break;
+        }
+        console.log('Please enter 1 or 2.');
+      }
+
+      if (choice === '1') {
+        console.log('');
+        console.log('Today\'s Inbox:');
+        inboxItems.forEach((item, index) => {
+          console.log(`  ${index + 1}. I${item.id} — ${item.text}`);
+        });
+        console.log('');
+
+        while (true) {
+          const selection = await ask(`Pick an item (1-${inboxItems.length}): `);
+          const index = parseInt(selection, 10);
+          if (!Number.isNaN(index) && index >= 1 && index <= inboxItems.length) {
+            selectedInboxItem = inboxItems[index - 1];
+            break;
+          }
+          console.log(`Enter a number between 1 and ${inboxItems.length}.`);
+        }
+
+        const editedSummary = await ask('Vision summary (press Enter to keep original): ', { allowEmpty: true });
+        visionSummary = editedSummary ? editedSummary : selectedInboxItem.text;
+      } else {
+        console.log('');
+        visionSummary = await ask('Describe the vision: ');
+        const newId = addInboxIdea(logFile, visionSummary);
+        console.log(`✓ Added I${newId} to today\'s Inbox.`);
+        selectedInboxItem = { id: newId, text: visionSummary };
+      }
+    } else {
+      console.log('No items in today\'s Inbox. Capture a new idea to begin.');
+      visionSummary = await ask('Describe the vision: ');
+      const newId = addInboxIdea(logFile, visionSummary);
+      console.log(`✓ Added I${newId} to today\'s Inbox.`);
+      selectedInboxItem = { id: newId, text: visionSummary };
+    }
+
+    sourceLabel = selectedInboxItem ? `I${selectedInboxItem.id}` : 'Ad-hoc';
+
+    console.log('');
+    console.log('Define the success criteria (one per line, blank line to finish).');
+    const successCriteria = [];
+    while (true) {
+      const criteria = await ask(`Success criteria ${successCriteria.length + 1}: `, {
+        allowEmpty: successCriteria.length > 0,
+      });
+      if (!criteria) {
+        if (successCriteria.length === 0) {
+          console.log('Please provide at least one success criteria.');
+          continue;
+        }
+        break;
+      }
+      successCriteria.push(criteria);
+    }
+
+    const riskNotes = await ask('Any risks or notes? (optional): ', { allowEmpty: true });
+
+    recordAutopilotVision(
+      logFile,
+      sourceLabel,
+      visionSummary,
+      successCriteria,
+      riskNotes ? riskNotes : ''
+    );
+
+    console.log('');
+    console.log('Vision locked in:');
+    console.log(`• Source: ${sourceLabel}`);
+    console.log(`• Summary: ${visionSummary}`);
+    console.log('• Success Criteria:');
+    successCriteria.forEach((item, index) => {
+      console.log(`  ${index + 1}. ${item}`);
+    });
+    if (riskNotes) {
+      console.log(`• Notes: ${riskNotes}`);
+    }
+    console.log('');
+    console.log('Starting plan → do → review cycles.');
+    console.log('');
+
+    let iteration = 1;
+    while (true) {
+      console.log(`════ Iteration ${iteration} ════`);
+
+      console.log('\n[Plan]');
+      planAtris();
+      await ask('Press Enter when planning is complete: ', { allowEmpty: true });
+
+      console.log('\n[Do]');
+      doAtris();
+      await ask('Press Enter when execution is complete: ', { allowEmpty: true });
+
+      console.log('\n[Review]');
+      reviewAtris();
+      await ask('Press Enter when validation is complete: ', { allowEmpty: true });
+
+      const isSuccess = await askYesNo('Did we meet the success criteria? (y/n): ');
+      if (isSuccess) {
+        const successNotes = await ask('Notes for the log (optional): ', { allowEmpty: true });
+        recordAutopilotIteration(
+          logFile,
+          iteration,
+          'Success',
+          successNotes ? successNotes : ''
+        );
+        recordAutopilotSuccess(
+          logFile,
+          selectedInboxItem ? selectedInboxItem.id : null,
+          visionSummary
+        );
+        console.log('\n✓ Success recorded. Autopilot complete.');
+        break;
+      } else {
+        const followUp = await ask('Describe remaining blockers / next steps (optional): ', {
+          allowEmpty: true,
+        });
+        recordAutopilotIteration(
+          logFile,
+          iteration,
+          'Follow-up required',
+          followUp ? followUp : ''
+        );
+        const continueLoop = await askYesNo('Run another plan → do → review cycle? (y/n): ');
+        if (!continueLoop) {
+          console.log('\nAutopilot session ended. Success criteria not yet met.');
+          break;
+        }
+        iteration += 1;
+      }
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+function autopilotAbortError() {
+  const error = new Error('Autopilot cancelled by user.');
+  error.__autopilotAbort = true;
+  return error;
+}
+
+function addInboxIdea(logFile, summary) {
+  const content = fs.readFileSync(logFile, 'utf8');
+  const nextId = getNextInboxId(content);
+  const updated = addInboxItemToContent(content, nextId, summary);
+  fs.writeFileSync(logFile, updated);
+  return nextId;
+}
+
+function parseInboxItems(content) {
+  const match = content.match(/## Inbox\n([\s\S]*?)(?=\n##|\n---|$)/);
+  if (!match) {
+    return [];
+  }
+  const body = match[1];
+  const lines = body.split('\n');
+  const items = [];
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    if (trimmed.startsWith('(Empty')) return;
+    const parsed = trimmed.match(/^- \*\*I(\d+):\*\*\s*(.+)$|^- \*\*I(\d+):\s+(.+)$/);
+    if (parsed) {
+      const id = parseInt(parsed[1] || parsed[3], 10);
+      const text = parsed[2] || parsed[4];
+      items.push({ id, text, line: trimmed });
+    }
+  });
+  return items;
+}
+
+function replaceInboxSection(content, items) {
+  const regex = /(## Inbox\n)([\s\S]*?)(\n---|\n##|$)/;
+  if (!regex.test(content)) {
+    const lines = items.length ? items.map((item) => item.line).join('\n') : '(Empty - inbox zero achieved)';
+    return `${content}\n\n## Inbox\n\n${lines}\n`;
+  }
+
+  return content.replace(regex, (match, header, body, suffix) => {
+    const inner = items.length
+      ? `\n${items.map((item) => item.line).join('\n')}\n`
+      : '\n(Empty - inbox zero achieved)\n';
+    return `${header}${inner}${suffix}`;
+  });
+}
+
+function addInboxItemToContent(content, id, summary) {
+  const items = parseInboxItems(content).filter((item) => item.id !== id);
+  const newItem = { id, text: summary, line: `- **I${id}:** ${summary}` };
+  const updatedItems = [newItem, ...items];
+  return replaceInboxSection(content, updatedItems);
+}
+
+function removeInboxItemFromContent(content, id) {
+  const items = parseInboxItems(content).filter((item) => item.id !== id);
+  return replaceInboxSection(content, items);
+}
+
+function getNextInboxId(content) {
+  const items = parseInboxItems(content);
+  if (items.length === 0) return 1;
+  return items.reduce((max, item) => (item.id > max ? item.id : max), 0) + 1;
+}
+
+function parseCompletionItems(content) {
+  const match = content.match(/## Completed ✅\n([\s\S]*?)(?=\n##|\n---|$)/);
+  if (!match) {
+    return [];
+  }
+  const body = match[1];
+  const lines = body.split('\n');
+  const items = [];
+  lines.forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    if (trimmed.startsWith('(Empty')) return;
+    const parsed = trimmed.match(/^- \*\*C(\d+):\*\*\s*(.+)$|^- \*\*C(\d+):\s+(.+)$/);
+    if (parsed) {
+      const id = parseInt(parsed[1] || parsed[3], 10);
+      const text = parsed[2] || parsed[4];
+      items.push({ id, text, line: trimmed });
+    }
+  });
+  return items;
+}
+
+function replaceCompletedSection(content, items) {
+  const regex = /(## Completed ✅\n)([\s\S]*?)(\n---|\n##|$)/;
+  if (!regex.test(content)) {
+    const lines = items.length ? items.map((item) => item.line).join('\n') : '';
+    return `${content}\n\n## Completed ✅\n\n${lines}\n`;
+  }
+
+  return content.replace(regex, (match, header, body, suffix) => {
+    const inner = items.length
+      ? `\n${items.map((item) => item.line).join('\n')}\n`
+      : '\n';
+    return `${header}${inner}${suffix}`;
+  });
+}
+
+function addCompletionItemToContent(content, id, summary) {
+  const items = parseCompletionItems(content).filter((item) => item.id !== id);
+  const newItem = { id, text: summary, line: `- **C${id}:** ${summary}` };
+  const updatedItems = [...items, newItem];
+  return replaceCompletedSection(content, updatedItems);
+}
+
+function getNextCompletionId(content) {
+  const items = parseCompletionItems(content);
+  if (items.length === 0) return 1;
+  return items.reduce((max, item) => (item.id > max ? item.id : max), 0) + 1;
+}
+
+function insertIntoNotesSection(content, block) {
+  const regex = /(## Notes\n)([\s\S]*?)(\n---|\n##|$)/;
+  const match = content.match(regex);
+  if (!match) {
+    return `${content}\n\n## Notes\n\n${block}\n`;
+  }
+  const header = match[1];
+  const body = match[2];
+  const suffix = match[3];
+  const trimmedBody = body.replace(/\s*$/, '');
+  const newBody = trimmedBody
+    ? `${trimmedBody}\n\n${block}\n`
+    : `\n${block}\n`;
+  return content.replace(regex, `${header}${newBody}${suffix}`);
+}
+
+function getTimeLabel() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+function recordAutopilotVision(logFile, sourceLabel, summary, successCriteria, riskNotes) {
+  const content = fs.readFileSync(logFile, 'utf8');
+  const lines = [
+    `### Autopilot Vision — ${getTimeLabel()}`,
+    `**Source:** ${sourceLabel}`,
+    `**Summary:** ${summary}`,
+    '**Success Criteria:**',
+    ...successCriteria.map((item) => `- ${item}`),
+  ];
+  if (riskNotes && riskNotes.trim()) {
+    lines.push(`**Risks / Notes:** ${riskNotes}`);
+  }
+  const block = lines.join('\n');
+  const updated = insertIntoNotesSection(content, block);
+  fs.writeFileSync(logFile, updated);
+}
+
+function recordAutopilotIteration(logFile, iteration, result, notes) {
+  const content = fs.readFileSync(logFile, 'utf8');
+  const lines = [
+    `### Autopilot Iteration ${iteration} — ${getTimeLabel()}`,
+    `**Validator Result:** ${result}`,
+  ];
+  if (notes && notes.trim()) {
+    lines.push(`**Notes:** ${notes}`);
+  }
+  const block = lines.join('\n');
+  const updated = insertIntoNotesSection(content, block);
+  fs.writeFileSync(logFile, updated);
+}
+
+function recordAutopilotSuccess(logFile, inboxId, summary) {
+  let content = fs.readFileSync(logFile, 'utf8');
+  if (typeof inboxId === 'number' && !Number.isNaN(inboxId)) {
+    content = removeInboxItemFromContent(content, inboxId);
+  }
+  const nextId = getNextCompletionId(content);
+  content = addCompletionItemToContent(content, nextId, `Autopilot — ${summary}`);
+  fs.writeFileSync(logFile, content);
 }
 
 function planAtris() {
