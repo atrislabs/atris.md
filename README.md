@@ -10,14 +10,17 @@ No more "where is the auth logic?" or "which file handles payments?" Atris gives
 npm install -g atris
 ```
 
+→ npm package: https://www.npmjs.com/package/atris
+
 ## Usage
 
 ```bash
 cd your-project
 atris init
+atris activate
 ```
 
-Opens `atris/GETTING_STARTED.md` with full instructions. Your AI agent reads `atris/atris.md` and generates:
+See `atris/GETTING_STARTED.md` for full instructions. Your AI agent reads `atris/atris.md` and generates:
 - **MAP.md** - Navigation guide with file:line precision
 - **agent_team/** - Navigator, executor, validator specs
 - **TASK_CONTEXTS.md** - Structured task bank
@@ -31,6 +34,16 @@ atris update
 ```
 
 Syncs local `atris.md` to latest version.
+
+## Talk to agents
+
+`atris activate` works immediately — it loads your journal, MAP, and TASK_CONTEXTS without needing an account. When you're ready to collaborate with Atris cloud agents, run:
+
+```bash
+atris agent   # pick an agent persona for this project
+atris login   # authenticate once for cloud sync + chat
+atris chat    # open an interactive session
+```
 
 ---
 
