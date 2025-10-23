@@ -11,6 +11,43 @@ const crypto = require('crypto');
 
 const command = process.argv[2];
 
+const TOKEN_REFRESH_BUFFER_SECONDS = 300; // Refresh ~5 minutes before expiry
+
+function decodeJwtClaims(token) {
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length < 2) {
+    return null;
+  }
+  try {
+    const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+    const decoded = Buffer.from(padded, 'base64').toString('utf8');
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+function getTokenExpiryEpochSeconds(token) {
+  const claims = decodeJwtClaims(token);
+  if (!claims || typeof claims.exp !== 'number') {
+    return null;
+  }
+  return claims.exp;
+}
+
+function shouldRefreshToken(token, bufferSeconds = TOKEN_REFRESH_BUFFER_SECONDS) {
+  const exp = getTokenExpiryEpochSeconds(token);
+  if (!exp) {
+    return false;
+  }
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return exp <= nowSeconds + bufferSeconds;
+}
+
 function showHelp() {
   console.log('Usage: atris <command>');
   console.log('Commands:');
@@ -630,8 +667,6 @@ async function logSyncAtris() {
     hash: finalHash,
   };
   saveLogSyncState(finalState);
-  console.log('');
-  console.log('Next: open the dashboard journal to verify formatting, or run this command after edits to stay in sync.');
 }
 
 function showTodayLog() {
@@ -882,10 +917,72 @@ async function refreshAccessToken(refreshToken, provider) {
   });
 }
 
+async function performTokenRefresh(credentials, sourceLabel = 'refreshed') {
+  if (!credentials || !credentials.refresh_token) {
+    return { ok: false, error: 'missing_refresh_token' };
+  }
+
+  const refreshed = await refreshAccessToken(credentials.refresh_token, credentials.provider);
+  if (!refreshed.ok) {
+    return { ok: false, error: refreshed.error || 'Refresh request failed' };
+  }
+
+  const accessToken = refreshed.data?.access_token;
+  if (!accessToken) {
+    return { ok: false, error: 'No access token returned by refresh API' };
+  }
+
+  const newRefreshToken = refreshed.data?.refresh_token || credentials.refresh_token;
+  const refreshUser = refreshed.data?.user || null;
+  const provider = refreshed.data?.provider || credentials.provider;
+  const email = refreshUser?.email || credentials.email;
+  const userId = refreshUser?.id || credentials.user_id;
+
+  saveCredentials(accessToken, newRefreshToken, email, userId, provider);
+  let latestCreds = loadCredentials();
+
+  const validation = await validateAccessToken(accessToken);
+  let finalUser = refreshUser;
+
+  if (validation.ok && validation.data?.valid) {
+    finalUser = validation.data.user || refreshUser || null;
+    const updatedEmail = finalUser?.email || latestCreds?.email || email;
+    const updatedProvider = finalUser?.provider || latestCreds?.provider || provider;
+    const updatedUserId = finalUser?.id || latestCreds?.user_id || userId;
+
+    if (
+      !latestCreds ||
+      updatedEmail !== latestCreds.email ||
+      updatedProvider !== latestCreds.provider ||
+      updatedUserId !== latestCreds.user_id
+    ) {
+      saveCredentials(accessToken, newRefreshToken, updatedEmail, updatedUserId, updatedProvider);
+      latestCreds = loadCredentials();
+    }
+  }
+
+  return {
+    ok: true,
+    payload: {
+      credentials: latestCreds || loadCredentials(),
+      user: finalUser,
+      source: sourceLabel,
+    },
+  };
+}
+
 async function ensureValidCredentials(options = {}) {
-  const credentials = loadCredentials();
+  let credentials = loadCredentials();
   if (!credentials || !credentials.token) {
     return { error: 'not_logged_in' };
+  }
+
+  if (credentials.refresh_token && shouldRefreshToken(credentials.token)) {
+    const proactive = await performTokenRefresh(credentials, 'proactive_refresh');
+    if (proactive.ok) {
+      return proactive.payload;
+    }
+    credentials = loadCredentials() || credentials;
   }
 
   const validation = await validateAccessToken(credentials.token);
@@ -920,34 +1017,12 @@ async function ensureValidCredentials(options = {}) {
     return { error: 'token_invalid', detail: validation.error || 'Token expired' };
   }
 
-  const refreshed = await refreshAccessToken(credentials.refresh_token, credentials.provider);
+  const refreshed = await performTokenRefresh(credentials, 'refreshed');
   if (!refreshed.ok) {
     return { error: 'refresh_failed', detail: refreshed.error };
   }
 
-  const accessToken = refreshed.data?.access_token;
-  const newRefreshToken = refreshed.data?.refresh_token || credentials.refresh_token;
-  const refreshUser = refreshed.data?.user || null;
-  const provider = refreshed.data?.provider || credentials.provider;
-  const email = refreshUser?.email || credentials.email;
-  const userId = refreshUser?.id || credentials.user_id;
-
-  if (!accessToken) {
-    return { error: 'refresh_failed', detail: 'No access token returned by refresh API' };
-  }
-
-  saveCredentials(accessToken, newRefreshToken, email, userId, provider);
-  const latestValidation = await validateAccessToken(accessToken);
-  const finalUser =
-    latestValidation.ok && latestValidation.data?.valid
-      ? latestValidation.data.user || refreshUser
-      : refreshUser;
-
-  return {
-    credentials: loadCredentials(),
-    user: finalUser,
-    source: 'refreshed',
-  };
+  return refreshed.payload;
 }
 
 async function fetchMyAgents(token) {
