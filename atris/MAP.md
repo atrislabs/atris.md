@@ -68,7 +68,7 @@ rg "bin" package.json                     # CLI entry point
   - `atris/` folder
   - `atris/agent_team/` subfolder
   - `GETTING_STARTED.md`, `MAP.md`, `TASK_CONTEXTS.md` placeholders
-  - `agent_team/navigator.md`, `executor.md`, `validator.md`, `launcher.md` placeholders
+  - `agent_team/brainstormer.md`, `navigator.md`, `executor.md`, `validator.md`, `launcher.md` placeholders
   - `atris/.project-profile.json` (project detection profile)
   - Copies `atris.md` from package
 
