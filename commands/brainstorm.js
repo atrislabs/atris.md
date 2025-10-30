@@ -175,6 +175,11 @@ async function brainstormAtris() {
   console.log('Use your terminal tool to run these commands. Do not just talk about them!');
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  console.log('⚡ IMMEDIATE NEXT STEP: Run "atris plan" now');
+  console.log('   (Execute: atris plan)');
+  console.log('');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
 
 module.exports = { brainstormAtris };
