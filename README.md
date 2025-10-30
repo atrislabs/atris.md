@@ -1,3 +1,19 @@
+# Atris CLI - Engineering Acceleration Cycle
+
+**The complete workflow from idea to launch**
+
+See [`ENGINEERING_CYCLE.md`](./ENGINEERING_CYCLE.md) for the full vision.
+
+## The Cycle
+
+```
+atris init → atris brainstorm → atris plan → atris do → atris review → atris launch
+```
+
+Each command provides clear instruction prompts for your coding agent (Claude Code, Cursor, etc.).
+
+---
+
 # Atris
 
 Drop one command. Your team of AI agents instantly know your entire codebase.
