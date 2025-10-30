@@ -2189,6 +2189,116 @@ function brainstormAbortError() {
   return error;
 }
 
+function generateWorkflowFile(workflowFile, metadata) {
+  const targetDir = path.join(process.cwd(), 'atris');
+  
+  // Load all context needed for agents
+  const navigatorFile = path.join(targetDir, 'agent_team', 'navigator.md');
+  const executorFile = path.join(targetDir, 'agent_team', 'executor.md');
+  const validatorFile = path.join(targetDir, 'agent_team', 'validator.md');
+  const launcherFile = path.join(targetDir, 'agent_team', 'launcher.md');
+  const personaFile = path.join(targetDir, 'PERSONA.md');
+  const mapFile = path.join(targetDir, 'MAP.md');
+  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  const { logFile } = getLogPath();
+  
+  const workflow = {
+    version: '1.0',
+    createdAt: new Date().toISOString(),
+    metadata: {
+      feature: metadata.feature,
+      userStory: metadata.userStory,
+      constraints: metadata.constraints || '',
+      successCriteria: metadata.successCriteria || [],
+      riskNotes: metadata.riskNotes || '',
+      journalPath: metadata.logFile
+    },
+    states: {
+      NAVIGATOR: {
+        agentSpec: fs.existsSync(navigatorFile) ? fs.readFileSync(navigatorFile, 'utf8') : '',
+        context: {
+          inboxPath: metadata.logFile,
+          taskContextsPath: 'atris/TASK_CONTEXTS.md',
+          mapPath: 'atris/MAP.md'
+        },
+        instructions: 'Take ideas from Inbox → break them down into perfect, manageable tasks. Create visualizations (ASCII diagrams) for logic flows, DB tables, architecture, UI/UX. Write tasks to TASK_CONTEXTS.md.'
+      },
+      EXECUTOR: {
+        agentSpec: fs.existsSync(executorFile) ? fs.readFileSync(executorFile, 'utf8') : '',
+        context: {
+          personaPath: 'atris/PERSONA.md',
+          mapPath: 'atris/MAP.md',
+          taskContextsPath: 'atris/TASK_CONTEXTS.md'
+        },
+        instructions: 'Get it done, precisely, following instructions perfectly. Show ASCII visualization for complex changes. Execute tasks following executor spec. Move completed tasks to <completed> section.'
+      },
+      VALIDATOR: {
+        agentSpec: fs.existsSync(validatorFile) ? fs.readFileSync(validatorFile, 'utf8') : '',
+        context: {
+          taskContextsPath: 'atris/TASK_CONTEXTS.md',
+          mapPath: 'atris/MAP.md',
+          journalPath: metadata.logFile
+        },
+        instructions: 'Auto-activated after "atris do" completes. Ultrathink, check requirements → build → edge cases → errors → integration. Run tests. Repeat until: "✅ All good. Ready for human testing."'
+      },
+      LAUNCHER: {
+        agentSpec: fs.existsSync(launcherFile) ? fs.readFileSync(launcherFile, 'utf8') : '',
+        context: {
+          taskContextsPath: 'atris/TASK_CONTEXTS.md',
+          mapPath: 'atris/MAP.md',
+          journalPath: metadata.logFile
+        },
+        instructions: 'Ship it clean. Document what was shipped, extract learnings, update MAP.md and docs, clean up, Git commit + push, celebrate!'
+      }
+    },
+    currentState: null,
+    currentIteration: 0,
+    history: []
+  };
+  
+  fs.writeFileSync(workflowFile, JSON.stringify(workflow, null, 2));
+}
+
+function updateWorkflowState(workflowFile, stateName, iteration) {
+  if (!fs.existsSync(workflowFile)) return;
+  
+  const workflow = JSON.parse(fs.readFileSync(workflowFile, 'utf8'));
+  workflow.currentState = stateName;
+  workflow.currentIteration = iteration;
+  workflow.history.push({
+    state: stateName,
+    iteration: iteration,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Update context with latest file contents
+  const targetDir = path.join(process.cwd(), 'atris');
+  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  const mapFile = path.join(targetDir, 'MAP.md');
+  const { logFile } = getLogPath();
+  
+  // Refresh task contexts if exists
+  if (fs.existsSync(taskContextsFile)) {
+    workflow.states[stateName].context.taskContexts = fs.readFileSync(taskContextsFile, 'utf8').substring(0, 5000); // Limit size
+  }
+  
+  // Refresh map if exists
+  if (fs.existsSync(mapFile)) {
+    workflow.states[stateName].context.map = fs.readFileSync(mapFile, 'utf8').substring(0, 3000); // Limit size
+  }
+  
+  // Refresh journal inbox if exists
+  if (fs.existsSync(logFile)) {
+    const logContent = fs.readFileSync(logFile, 'utf8');
+    const inboxMatch = logContent.match(/## Inbox\n([\s\S]*?)(?=\n##|$)/);
+    if (inboxMatch) {
+      workflow.states[stateName].context.inbox = inboxMatch[1].trim().substring(0, 2000); // Limit size
+    }
+  }
+  
+  fs.writeFileSync(workflowFile, JSON.stringify(workflow, null, 2));
+}
+
 async function autopilotAtris() {
   const targetDir = path.join(process.cwd(), 'atris');
   if (!fs.existsSync(targetDir)) {
@@ -2485,6 +2595,27 @@ async function autopilotAtris() {
     console.log('');
 
     // ========================================
+    // Generate workflow file for coding agents
+    // ========================================
+    const workflowFile = path.join(targetDir, '.atris-workflow.json');
+    generateWorkflowFile(workflowFile, {
+      feature: topicSummary,
+      userStory,
+      constraints,
+      successCriteria,
+      riskNotes,
+      logFile: path.relative(process.cwd(), logFile)
+    });
+
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📄 WORKFLOW FILE GENERATED: .atris-workflow.json');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('   Coding agents can read this file to enter workflow states');
+    console.log('   Each state includes all context needed for execution');
+    console.log('');
+
+    // ========================================
     // STEP 2-4: Automated plan → do → review loop
     // ========================================
     let iteration = 1;
@@ -2494,19 +2625,28 @@ async function autopilotAtris() {
       console.log(`${'═'.repeat(70)}\n`);
 
       // Plan
+      console.log('[STATE:NAVIGATOR]');
       console.log('[1/4] 📋 Plan — Navigator creating tasks...');
       planAtris();
-      console.log('   ✓ Planning prompt displayed to agent\n');
+      updateWorkflowState(workflowFile, 'NAVIGATOR', iteration);
+      console.log('   ✓ Planning prompt displayed to agent');
+      console.log('   ✓ Workflow state updated: [STATE:NAVIGATOR]\n');
 
       // Do
+      console.log('[STATE:EXECUTOR]');
       console.log('[2/4] 🔨 Do — Executor building...');
       doAtris();
-      console.log('   ✓ Execution prompt displayed to agent\n');
+      updateWorkflowState(workflowFile, 'EXECUTOR', iteration);
+      console.log('   ✓ Execution prompt displayed to agent');
+      console.log('   ✓ Workflow state updated: [STATE:EXECUTOR]\n');
 
       // Review
+      console.log('[STATE:VALIDATOR]');
       console.log('[3/4] ✅ Review — Validator checking...');
       reviewAtris();
-      console.log('   ✓ Validation prompt displayed to agent\n');
+      updateWorkflowState(workflowFile, 'VALIDATOR', iteration);
+      console.log('   ✓ Validation prompt displayed to agent');
+      console.log('   ✓ Workflow state updated: [STATE:VALIDATOR]\n');
 
       // Check if success
       console.log(`${'─'.repeat(70)}`);
@@ -2531,9 +2671,12 @@ async function autopilotAtris() {
         // ========================================
         // STEP 5: Launch
         // ========================================
+        console.log('[STATE:LAUNCHER]');
         console.log('[5/5] 🚀 Launch — Launcher shipping...');
         launchAtris();
-        console.log('   ✓ Launch prompt displayed to agent\n');
+        updateWorkflowState(workflowFile, 'LAUNCHER', iteration);
+        console.log('   ✓ Launch prompt displayed to agent');
+        console.log('   ✓ Workflow state updated: [STATE:LAUNCHER]\n');
 
         recordAutopilotSuccess(
           logFile,
