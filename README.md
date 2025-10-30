@@ -10,7 +10,7 @@ See [`ENGINEERING_CYCLE.md`](./ENGINEERING_CYCLE.md) for the full vision.
 atris init → atris brainstorm → atris plan → atris do → atris review → atris launch
 ```
 
-Each command provides clear instruction prompts for your coding agent (Claude Code, Cursor, etc.).
+Each command provides clear instruction prompts for your coding agent (Cursor, Claude, etc.).
 
 ---
 
@@ -79,7 +79,7 @@ Need a structured prompt for an agent-led ideation session?
 atris brainstorm
 ```
 
-Answer a couple quick questions, get a ready-to-send conversation opener for Claude Code (with context + ASCII cue), and optionally log the session summary plus next steps.
+Answer a couple quick questions, get a ready-to-send conversation opener for your coding agent (with context + ASCII cue), and optionally log the session summary plus next steps.
 
 ---
 
