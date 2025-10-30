@@ -57,7 +57,18 @@ Ask yourself:
 - **Any project docs:** README, changelog, etc.
 
 ### 4. Suggest Publishing
-- GitHub commit message?
+**If developing the ATRIS package itself:**
+- Test locally: `npm link` (link package for local testing)
+- Verify: Test in a project with `atris init` to ensure changes work
+- GitHub commit + push
+- Bump version in package.json (if needed)
+- npm publish (if ready for release)
+
+**If using ATRIS in your project:**
+- GitHub commit + push (standard workflow)
+- Deploy/release per your project's process
+
+**For both:**
 - Docs site update?
 - Team announcement?
 - Release notes?

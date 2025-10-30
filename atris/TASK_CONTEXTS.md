@@ -14,19 +14,13 @@ This file tracks **active tasks** for parallel agent/human work. Navigator creat
 
 ## Backlog
 
-(Unclaimed tasks ready for execution)
-
 (No active tasks)
 
 ---
 
 ## In Progress
 
-(Tasks currently being worked on - claim by moving from Backlog + add your name/timestamp)
-
 (No tasks in progress)
-
-Format: `**Claimed by:** [Agent/Name] at [Time]`
 
 ---
 

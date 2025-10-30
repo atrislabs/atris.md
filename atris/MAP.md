@@ -51,22 +51,29 @@ rg "bin" package.json                     # CLI entry point
 - **Files:** `commands/log-sync.js`, uses `utils/auth.js`, `utils/api.js`
 
 ### Feature: CLI Initialization (`atris init`)
-**Purpose:** Creates atris/ folder structure with placeholders in user projects
+**Purpose:** Creates atris/ folder structure with placeholders in user projects + universal project detection
 
-- **Entry point:** `bin/atris.js:18-111` (initAtris function)
+- **Entry point:** `commands/init.js` (initAtris function)
 - **Creates:**
   - `atris/` folder
   - `atris/agent_team/` subfolder
   - `GETTING_STARTED.md`, `MAP.md`, `TASK_CONTEXTS.md` placeholders
-  - `agent_team/navigator.md`, `executor.md`, `validator.md` placeholders
+  - `agent_team/navigator.md`, `executor.md`, `validator.md`, `launcher.md` placeholders
+  - `atris/.project-profile.json` (project detection profile)
   - Copies `atris.md` from package
 
 **Key logic:**
-- Line 28-46: Folder creation
-- Line 48-87: Placeholder file generation
-- Line 89-106: Copy atris.md + success message
+- `commands/init.js:4-149`: `detectProjectContext()` - Scans project structure (package.json, requirements.txt, Gemfile, go.mod, etc.)
+- `commands/init.js:151-228`: `injectProjectPatterns()` - Injects project-specific instructions into agent specs
+- `commands/init.js:230-305`: `initAtris()` - Creates structure, detects context, generates profile, injects patterns
 
-**Search:** `rg "function initAtris" bin/atris.js`
+**Project Detection:**
+- Supports: Node.js, Python, Ruby/Rails, Go, Rust, Java, PHP, Elixir, knowledge bases
+- Auto-detects: Framework (React, Vue, Django, Rails, etc.), test commands, file structure
+- Generates: `.project-profile.json` with detected patterns
+- Injects: Project-native instructions into agent_team/*.md files
+
+**Search:** `rg "detectProjectContext|injectProjectPatterns" commands/init.js`
 
 ### Feature: Spec Sync (`atris update` / `atris sync`)
 **Purpose:** Updates local atris.md to latest package version

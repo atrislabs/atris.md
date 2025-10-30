@@ -3282,10 +3282,23 @@ function doAtris() {
     process.exit(1);
   }
 
-  // Detect context: frontend/backend/root
-  const isFrontend = cwd.includes('atrisos-web');
-  const isBackend = cwd.includes('atrisos-backend');
-  const context = isFrontend ? 'FRONTEND' : (isBackend ? 'BACKEND' : 'ROOT');
+  // Load project profile for context
+  let context = 'ROOT';
+  let profile = null;
+  const profileFile = path.join(targetDir, '.project-profile.json');
+  if (fs.existsSync(profileFile)) {
+    try {
+      profile = JSON.parse(fs.readFileSync(profileFile, 'utf8'));
+      // Use profile type as context (e.g., 'nodejs', 'python', 'knowledge-base')
+      context = profile.type.toUpperCase();
+      if (profile.framework !== 'none') {
+        context += `/${profile.framework.toUpperCase()}`;
+      }
+    } catch (e) {
+      // Fallback to ROOT if profile parse fails
+      context = 'ROOT';
+    }
+  }
   
   // Load executor spec
   const executorSpec = fs.readFileSync(executorFile, 'utf8');
@@ -3301,39 +3314,17 @@ function doAtris() {
   const mapFile = path.join(targetDir, 'MAP.md');
   const mapPath = fs.existsSync(mapFile) ? path.relative(process.cwd(), mapFile) : null;
 
-  // Load tasks from appropriate TODO file
+  // Load tasks from TASK_CONTEXTS.md (generic - no hardcoded paths)
   let tasksContent = '';
   let taskSource = '';
-  if (isFrontend) {
-    const todoFile = path.join(cwd, 'TODO', 'todo.md');
-    if (fs.existsSync(todoFile)) {
-      tasksContent = fs.readFileSync(todoFile, 'utf8');
-      taskSource = 'atrisos-web/TODO/todo.md';
-    }
-  } else if (isBackend) {
-    const todoFile = path.join(cwd, 'TODO.md');
-    if (fs.existsSync(todoFile)) {
-      tasksContent = fs.readFileSync(todoFile, 'utf8');
-      taskSource = 'atrisos-backend/TODO.md';
-    }
-  } else {
-    // Root level - check both
-    const frontendTodo = path.join(cwd, 'atrisos-web', 'TODO', 'todo.md');
-    const backendTodo = path.join(cwd, 'atrisos-backend', 'TODO.md');
-    if (fs.existsSync(frontendTodo)) {
-      tasksContent += '=== FRONTEND TASKS ===\n';
-      tasksContent += fs.readFileSync(frontendTodo, 'utf8');
-      taskSource += 'atrisos-web/TODO/todo.md\n';
-    }
-    if (fs.existsSync(backendTodo)) {
-      tasksContent += '\n=== BACKEND TASKS ===\n';
-      tasksContent += fs.readFileSync(backendTodo, 'utf8');
-      taskSource += 'atrisos-backend/TODO.md\n';
-    }
+  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  if (fs.existsSync(taskContextsFile)) {
+    tasksContent = fs.readFileSync(taskContextsFile, 'utf8');
+    taskSource = 'atris/TASK_CONTEXTS.md';
   }
   
-  // Extract tagged tasks
-  const taskTag = isFrontend ? '[FRONTEND]' : (isBackend ? '[BACKEND]' : '');
+  // Extract tasks from TASK_CONTEXTS.md (no tag filtering - all tasks available)
+  const taskTag = '';
   let filteredTasks = '';
   if (taskTag && tasksContent) {
     const taskLines = tasksContent.split('\n');
@@ -3367,8 +3358,7 @@ function doAtris() {
     filteredTasks = tasksContent;
   }
   
-  // Load TASK_CONTEXTS.md (legacy, but keep for compatibility)
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  // Load TASK_CONTEXTS.md content (using existing taskContextsFile variable)
   let taskContexts = '';
   if (fs.existsSync(taskContextsFile)) {
     taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
@@ -3764,19 +3754,39 @@ function launchAtris() {
   console.log('');
   console.log('⚠️  CRITICAL: Execute these steps NOW using terminal and file tools:');
   console.log('');
+  // Detect if this is the atris package project or a user project
+  const isAtrisPackage = fs.existsSync(path.join(process.cwd(), 'package.json')) && 
+    fs.existsSync(path.join(process.cwd(), 'bin', 'atris.js')) &&
+    fs.existsSync(path.join(process.cwd(), 'atris.md'));
+
   console.log('Launch Workflow:');
   console.log('  1. Document what was shipped (add Launch entry to journal Notes section)');
   console.log('  2. Extract learnings (what worked? what would you do differently?)');
   console.log('  3. Update MAP.md with new patterns/file locations');
   console.log('  4. Update relevant docs (README, API docs, etc.)');
   console.log('  5. Clean up (remove temp files, unused code, etc.)');
-  console.log('  6. [EXECUTE] Git commit + push:');
-  console.log('     - Run: git add -A');
-  console.log('     - Run: git commit -m "Descriptive message about what was shipped"');
-  console.log('     - Run: git push origin master');
-  console.log('  7. Optional: Update changelog/blog (7 sentences max essay on what shipped)');
-  console.log('  8. Run: atris log sync (to sync journal to backend)');
-  console.log('  9. Celebrate! 🎉');
+  if (isAtrisPackage) {
+    console.log('  6. [EXECUTE] Test locally (package development):');
+    console.log('     - Run: npm link (link package for local testing)');
+    console.log('     - Test: Create test project, run atris init to verify changes');
+    console.log('  7. [EXECUTE] Git commit + push:');
+    console.log('     - Run: git add -A');
+    console.log('     - Run: git commit -m "Descriptive message about what was shipped"');
+    console.log('     - Run: git push origin master');
+    console.log('  8. [EXECUTE] Publish to npm (if ready for release):');
+    console.log('     - Run: npm publish');
+    console.log('  9. Optional: Update changelog/blog (7 sentences max essay on what shipped)');
+    console.log('  10. Run: atris log sync (to sync journal to backend)');
+    console.log('  11. Celebrate! 🎉');
+  } else {
+    console.log('  6. [EXECUTE] Git commit + push:');
+    console.log('     - Run: git add -A');
+    console.log('     - Run: git commit -m "Descriptive message about what was shipped"');
+    console.log('     - Run: git push origin <your-branch>');
+    console.log('  7. Optional: Update changelog/blog (7 sentences max essay on what shipped)');
+    console.log('  8. Run: atris log sync (to sync journal to backend)');
+    console.log('  9. Celebrate! 🎉');
+  }
   console.log('');
   console.log('DO NOT just describe these steps - actually execute the git commands!');
   console.log('');
