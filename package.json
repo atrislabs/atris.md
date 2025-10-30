@@ -1,6 +1,6 @@
 {
   "name": "atris",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Universal system instrumentation for AI agents - works for code, product, sales, and more",
   "main": "bin/atris.js",
   "bin": {
@@ -8,6 +8,9 @@
   },
   "files": [
     "bin/",
+    "commands/",
+    "utils/",
+    "lib/",
     "README.md",
     "atris.md",
     "GETTING_STARTED.md",
