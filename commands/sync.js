@@ -21,7 +21,8 @@ function syncAtris() {
     { source: 'atris/agent_team/navigator.md', target: 'agent_team/navigator.md' },
     { source: 'atris/agent_team/executor.md', target: 'agent_team/executor.md' },
     { source: 'atris/agent_team/validator.md', target: 'agent_team/validator.md' },
-    { source: 'atris/agent_team/launcher.md', target: 'agent_team/launcher.md' }
+    { source: 'atris/agent_team/launcher.md', target: 'agent_team/launcher.md' },
+    { source: 'atris/agent_team/brainstormer.md', target: 'agent_team/brainstormer.md' }
   ];
 
   let updated = 0;

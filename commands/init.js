@@ -253,6 +253,7 @@ function initAtris() {
   const executorFile = path.join(agentTeamDir, 'executor.md');
   const validatorFile = path.join(agentTeamDir, 'validator.md');
   const launcherFile = path.join(agentTeamDir, 'launcher.md');
+  const brainstormerFile = path.join(agentTeamDir, 'brainstormer.md');
 
   const gettingStartedSource = path.join(__dirname, '..', 'GETTING_STARTED.md');
   const personaSource = path.join(__dirname, '..', 'PERSONA.md');
@@ -281,6 +282,7 @@ function initAtris() {
   const executorSource = path.join(__dirname, '..', 'atris', 'agent_team', 'executor.md');
   const validatorSource = path.join(__dirname, '..', 'atris', 'agent_team', 'validator.md');
   const launcherSource = path.join(__dirname, '..', 'atris', 'agent_team', 'launcher.md');
+  const brainstormerSource = path.join(__dirname, '..', 'atris', 'agent_team', 'brainstormer.md');
 
   if (!fs.existsSync(navigatorFile) && fs.existsSync(navigatorSource)) {
     fs.copyFileSync(navigatorSource, navigatorFile);
@@ -300,6 +302,11 @@ function initAtris() {
   if (!fs.existsSync(launcherFile) && fs.existsSync(launcherSource)) {
     fs.copyFileSync(launcherSource, launcherFile);
     console.log('✓ Created agent_team/launcher.md');
+  }
+
+  if (!fs.existsSync(brainstormerFile) && fs.existsSync(brainstormerSource)) {
+    fs.copyFileSync(brainstormerSource, brainstormerFile);
+    console.log('✓ Created agent_team/brainstormer.md');
   }
 
   // Detect project context and generate profile
@@ -323,10 +330,11 @@ function initAtris() {
     console.log('   ├── MAP.md (placeholder)');
     console.log('   ├── TASK_CONTEXTS.md (placeholder)');
     console.log('   └── agent_team/');
-    console.log('       ├── navigator.md (placeholder)');
-    console.log('       ├── executor.md (placeholder)');
-    console.log('       ├── validator.md (placeholder)');
-    console.log('       └── launcher.md (placeholder)');
+    console.log('       ├── brainstormer.md (vision shaper)');
+    console.log('       ├── navigator.md (planner)');
+    console.log('       ├── executor.md (builder)');
+    console.log('       ├── validator.md (reviewer)');
+    console.log('       └── launcher.md (closer)');
     console.log('\nNext steps:');
     console.log('1. Read atris/GETTING_STARTED.md for the full guide');
     console.log('2. Open atris/atris.md and paste it to your AI agent');

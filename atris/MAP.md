@@ -29,15 +29,25 @@ rg "bin" package.json                     # CLI entry point
 ## By-Feature Map
 
 ### Feature: Brainstorm (`atris brainstorm`)
-**Purpose:** Generate structured prompts with analytics integration and game-like incentives
+**Purpose:** Idea & reality shaping through human conversation flow (guided by brainstormer.md agent spec)
 
-- **Entry point:** `commands/brainstorm.js:15-304` (brainstormAtris function)
+- **Entry point:** `commands/brainstorm.js:14-248` (brainstormAtris function)
+- **Agent spec:** `atris/agent_team/brainstormer.md` — Idea & Reality Shaper
 - **Key features:**
+  - Loads brainstormer.md agent spec (guides conversation)
   - Shows today's stats (completions, inbox items) at start
   - Fetches journal context from backend
-  - Generates story-first prompts (user outcome, vibes, constraints)
-  - Encourages logging → sync → analytics loop
-- **Files:** `commands/brainstorm.js`, uses `lib/file-ops.js` for journal operations
+  - Supports blank ideas — starts conversation from scratch
+  - Visual + logic approach (ASCII diagrams for everyone)
+  - 1-2 ideas at a time (human conversation pace)
+  - Adaptive depth (matches user knowledge level)
+- **Brainstormer philosophy:**
+  - Idea shaping: Expand possibilities, connect dots
+  - Reality shaping: Show current vs possible futures
+  - Feels like talking to human brainstormer who gets excited
+- **Files:** `commands/brainstorm.js`, `atris/agent_team/brainstormer.md`, uses `lib/file-ops.js` for journal operations
+
+**Search:** `rg "brainstormAtris|brainstormer" commands/brainstorm.js`
 
 ### Feature: Log Sync (`atris log sync`)
 **Purpose:** Bidirectional sync between local journal and backend
