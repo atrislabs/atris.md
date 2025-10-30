@@ -296,7 +296,14 @@ async function brainstormAtris() {
       console.log('💡 Log sessions to track progress → run "atris analytics" to see your stats!');
     }
 
-    console.log('\n✨ Brainstorm complete. Ready to build!');
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✨ Brainstorm complete!');
+    console.log('');
+    console.log('📋 Next step: Run "atris plan" to break this into actionable tasks.');
+    console.log('');
+    console.log('Full cycle: brainstorm → plan → do → review → launch');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } finally {
     rl.close();
   }
