@@ -177,7 +177,8 @@ if (command === 'init') {
       process.exit(1);
     });
 } else if (command === 'status') {
-  statusAtris();
+  const isQuick = process.argv.includes('--quick') || process.argv.includes('-q');
+  statusAtris(isQuick);
 } else if (command === 'analytics') {
   analyticsAtris();
 } else {
@@ -2197,11 +2198,13 @@ async function autopilotAtris() {
   const navigatorFile = path.join(targetDir, 'agent_team', 'navigator.md');
   const executorFile = path.join(targetDir, 'agent_team', 'executor.md');
   const validatorFile = path.join(targetDir, 'agent_team', 'validator.md');
+  const launcherFile = path.join(targetDir, 'agent_team', 'launcher.md');
 
   const missingSpecs = [];
   if (!fs.existsSync(navigatorFile)) missingSpecs.push('navigator.md');
   if (!fs.existsSync(executorFile)) missingSpecs.push('executor.md');
   if (!fs.existsSync(validatorFile)) missingSpecs.push('validator.md');
+  if (!fs.existsSync(launcherFile)) missingSpecs.push('launcher.md');
 
   if (missingSpecs.length > 0) {
     throw new Error(`Missing agent spec(s): ${missingSpecs.join(', ')}. Run "atris init" to restore them.`);
@@ -2215,7 +2218,8 @@ async function autopilotAtris() {
 
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────────┐');
-  console.log('│ ATRIS Autopilot — plan → do → review loop                   │');
+  console.log('│ ATRIS Autopilot — Full Cycle Automation                      │');
+  console.log('│ brainstorm → plan → do → review → launch                    │');
   console.log('└─────────────────────────────────────────────────────────────┘');
   console.log('');
   console.log(`Date: ${dateFormatted}`);
@@ -2252,16 +2256,60 @@ async function autopilotAtris() {
     }
   };
 
+  // ========================================
+  // STEP 1: Brainstorm with user
+  // ========================================
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🧠 STEP 1: Brainstorm — Define the vision');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+
   let selectedInboxItem = null;
-  let visionSummary = '';
-  let sourceLabel = 'Ad-hoc';
+  let topicSummary = '';
+  let userStory = '';
+  let feelingsVibe = '';
+  let constraints = '';
+
+  // Try to fetch latest journal entry from backend
+  let journalContext = '';
+  const config = loadConfig();
+  const credentials = loadCredentials();
+  
+  if (config.agent_id && credentials && credentials.token) {
+    try {
+      const journalResult = await apiRequestJson(`/agents/${config.agent_id}/journal/today`, {
+        method: 'GET',
+        token: credentials.token,
+      });
+      
+      if (journalResult.ok && journalResult.data?.content) {
+        journalContext = journalResult.data.content;
+      } else {
+        const listResult = await apiRequestJson(`/agents/${config.agent_id}/journal/?limit=1`, {
+          method: 'GET',
+          token: credentials.token,
+        });
+        
+        if (listResult.ok && listResult.data?.entries?.length > 0) {
+          journalContext = listResult.data.entries[0].content || '';
+        }
+      }
+    } catch (error) {
+      // Fallback to local
+    }
+  }
+
+  // Fallback to local log file
+  if (!journalContext && fs.existsSync(logFile)) {
+    journalContext = fs.readFileSync(logFile, 'utf8');
+  }
 
   try {
-    const initialLogContent = fs.readFileSync(logFile, 'utf8');
-    let inboxItems = parseInboxItems(initialLogContent);
+    const initialContent = journalContext || (fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '');
+    let inboxItems = parseInboxItems(initialContent);
 
     if (inboxItems.length > 0) {
-      console.log('Choose a vision source:');
+      console.log('Choose a brainstorm source:');
       console.log('  1. Select an item from today\'s Inbox');
       console.log('  2. Enter a new idea');
       console.log('');
@@ -2293,27 +2341,106 @@ async function autopilotAtris() {
           console.log(`Enter a number between 1 and ${inboxItems.length}.`);
         }
 
-        const editedSummary = await ask('Vision summary (press Enter to keep original): ', { allowEmpty: true });
-        visionSummary = editedSummary ? editedSummary : selectedInboxItem.text;
+        const editedSummary = await ask('Brainstorm topic (press Enter to keep original): ', { allowEmpty: true });
+        topicSummary = editedSummary ? editedSummary : selectedInboxItem.text;
       } else {
         console.log('');
-        visionSummary = await ask('Describe the vision: ');
-        const newId = addInboxIdea(logFile, visionSummary);
+        topicSummary = await ask('Describe the brainstorm topic: ');
+        const newId = addInboxIdea(logFile, topicSummary);
         console.log(`✓ Added I${newId} to today\'s Inbox.`);
-        selectedInboxItem = { id: newId, text: visionSummary };
+        selectedInboxItem = { id: newId, text: topicSummary };
       }
     } else {
       console.log('No items in today\'s Inbox. Capture a new idea to begin.');
-      visionSummary = await ask('Describe the vision: ');
-      const newId = addInboxIdea(logFile, visionSummary);
+      topicSummary = await ask('Describe the brainstorm topic: ');
+      const newId = addInboxIdea(logFile, topicSummary);
       console.log(`✓ Added I${newId} to today\'s Inbox.`);
-      selectedInboxItem = { id: newId, text: visionSummary };
+      selectedInboxItem = { id: newId, text: topicSummary };
     }
 
-    sourceLabel = selectedInboxItem ? `I${selectedInboxItem.id}` : 'Ad-hoc';
+    const sourceLabel = selectedInboxItem ? `I${selectedInboxItem.id}` : 'Ad-hoc';
 
     console.log('');
-    console.log('Define the success criteria (one per line, blank line to finish).');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📖 Craft the Story — What should the output be?');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+
+    userStory = await ask('Describe the desired outcome (what should users experience?): ');
+    feelingsVibe = await ask('Feelings/vibes we\'re aiming for? (optional): ', { allowEmpty: true });
+    constraints = await ask('Constraints or guardrails? (optional): ', { allowEmpty: true });
+
+    // Generate and show brainstorm prompt
+    const promptLines = [];
+    promptLines.push('You:');
+    promptLines.push('');
+    promptLines.push(`I want to brainstorm: ${topicSummary}`);
+    promptLines.push('');
+    
+    if (userStory) {
+      promptLines.push(`The outcome should be: ${userStory}`);
+      promptLines.push('');
+    }
+    
+    if (feelingsVibe) {
+      promptLines.push(`Vibe we\'re going for: ${feelingsVibe}`);
+      promptLines.push('');
+    }
+    
+    if (constraints) {
+      promptLines.push(`Constraints: ${constraints}`);
+      promptLines.push('');
+    }
+    
+    promptLines.push('Help me uncover what we need to build. Keep responses short (4-5 sentences), pause for alignment, sketch ASCII when structure helps.');
+    promptLines.push('');
+    promptLines.push('Claude:');
+
+    const promptText = promptLines.join('\n');
+
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📋 PROMPT FOR YOUR CODING EDITOR:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+    console.log('```');
+    console.log(promptText);
+    console.log('```');
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+
+    // Get approval to proceed with autopilot
+    console.log('');
+    const proceed = await askYesNo('✓ Brainstorm complete. Ready to start autopilot (plan → do → review → launch)? (y/n): ');
+    if (!proceed) {
+      console.log('\nAutopilot cancelled. Brainstorm prompt is ready for your agent.');
+      return;
+    }
+
+    // Log brainstorm session
+    const sessionSummary = await ask('Brainstorm session summary (1-2 sentences, optional): ', { allowEmpty: true });
+    recordBrainstormSession(
+      logFile,
+      sourceLabel,
+      topicSummary,
+      userStory,
+      [],
+      [],
+      constraints,
+      '',
+      feelingsVibe || '',
+      [],
+      sessionSummary || 'Autopilot brainstorm session'
+    );
+
+    // Define success criteria
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🎯 Define Success Criteria');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+
     const successCriteria = [];
     while (true) {
       const criteria = await ask(`Success criteria ${successCriteria.length + 1}: `, {
@@ -2334,15 +2461,17 @@ async function autopilotAtris() {
     recordAutopilotVision(
       logFile,
       sourceLabel,
-      visionSummary,
+      topicSummary,
       successCriteria,
       riskNotes ? riskNotes : ''
     );
 
     console.log('');
-    console.log('Vision locked in:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('✓ Vision locked in');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`• Source: ${sourceLabel}`);
-    console.log(`• Summary: ${visionSummary}`);
+    console.log(`• Summary: ${topicSummary}`);
     console.log('• Success Criteria:');
     successCriteria.forEach((item, index) => {
       console.log(`  ${index + 1}. ${item}`);
@@ -2351,26 +2480,39 @@ async function autopilotAtris() {
       console.log(`• Notes: ${riskNotes}`);
     }
     console.log('');
-    console.log('Starting plan → do → review cycles.');
+    console.log('🚀 Starting automated cycle: plan → do → review → launch');
+    console.log('   (No manual pauses - fully automated after this approval)');
     console.log('');
 
+    // ========================================
+    // STEP 2-4: Automated plan → do → review loop
+    // ========================================
     let iteration = 1;
     while (true) {
-      console.log(`════ Iteration ${iteration} ════`);
+      console.log(`\n${'═'.repeat(70)}`);
+      console.log(`AUTOPILOT ITERATION ${iteration}`);
+      console.log(`${'═'.repeat(70)}\n`);
 
-      console.log('\n[Plan]');
+      // Plan
+      console.log('[1/4] 📋 Plan — Navigator creating tasks...');
       planAtris();
-      await ask('Press Enter when planning is complete: ', { allowEmpty: true });
+      console.log('   ✓ Planning prompt displayed to agent\n');
 
-      console.log('\n[Do]');
+      // Do
+      console.log('[2/4] 🔨 Do — Executor building...');
       doAtris();
-      await ask('Press Enter when execution is complete: ', { allowEmpty: true });
+      console.log('   ✓ Execution prompt displayed to agent\n');
 
-      console.log('\n[Review]');
+      // Review
+      console.log('[3/4] ✅ Review — Validator checking...');
       reviewAtris();
-      await ask('Press Enter when validation is complete: ', { allowEmpty: true });
+      console.log('   ✓ Validation prompt displayed to agent\n');
 
-      const isSuccess = await askYesNo('Did we meet the success criteria? (y/n): ');
+      // Check if success
+      console.log(`${'─'.repeat(70)}`);
+      const isSuccess = await askYesNo(`Did we meet the success criteria? (y/n): `);
+      console.log('');
+
       if (isSuccess) {
         const successNotes = await ask('Notes for the log (optional): ', { allowEmpty: true });
         recordAutopilotIteration(
@@ -2379,12 +2521,35 @@ async function autopilotAtris() {
           'Success',
           successNotes ? successNotes : ''
         );
+        
+        console.log('');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('✓ Success criteria met!');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('');
+
+        // ========================================
+        // STEP 5: Launch
+        // ========================================
+        console.log('[5/5] 🚀 Launch — Launcher shipping...');
+        launchAtris();
+        console.log('   ✓ Launch prompt displayed to agent\n');
+
         recordAutopilotSuccess(
           logFile,
           selectedInboxItem ? selectedInboxItem.id : null,
-          visionSummary
+          topicSummary
         );
-        console.log('\n✓ Success recorded. Autopilot complete.');
+
+        console.log('');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🎉 AUTOPILOT COMPLETE');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('');
+        console.log('✓ Feature completed and shipped');
+        console.log('✓ All prompts displayed for agent workflow');
+        console.log('✓ Success recorded in journal');
+        console.log('');
         break;
       } else {
         const followUp = await ask('Describe remaining blockers / next steps (optional): ', {
@@ -2396,9 +2561,9 @@ async function autopilotAtris() {
           'Follow-up required',
           followUp ? followUp : ''
         );
-        const continueLoop = await askYesNo('Run another plan → do → review cycle? (y/n): ');
+        const continueLoop = await askYesNo('Continue with another iteration? (y/n): ');
         if (!continueLoop) {
-          console.log('\nAutopilot session ended. Success criteria not yet met.');
+          console.log('\nAutopilot paused. Success criteria not yet met.');
           break;
         }
         iteration += 1;
@@ -3265,7 +3430,7 @@ function launchAtris() {
   console.log('');
 }
 
-function statusAtris() {
+function statusAtris(isQuick = false) {
   const targetDir = path.join(process.cwd(), 'atris');
 
   if (!fs.existsSync(targetDir)) {
@@ -3345,7 +3510,13 @@ function statusAtris() {
     }
   }
 
-  // Display status
+  // Quick mode: one-line summary
+  if (isQuick) {
+    console.log(`📥 ${inboxItems.length} | 📋 ${backlogTasks.length} | 🔨 ${inProgressTasks.length} | ✅ ${completions.length}`);
+    return;
+  }
+
+  // Full display status
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────────┐');
   console.log(`│ ATRIS Status — ${dateFormatted}${' '.repeat(39 - dateFormatted.length)}│`);
