@@ -9,11 +9,12 @@ This file provides guidance to any coding agent (Claude Code, Cursor, Windsurf, 
 **FIRST:** Read `atris/PERSONA.md` and adopt that personality.
 
 **Then follow this workflow:**
-1. **Before any change:** Read `atris/MAP.md` to find relevant files/components
-2. **When starting a task:** Check `atris/TASK_CONTEXTS.md` for existing tasks or add new one
-3. **After completing task:** Delete task from TASK_CONTEXTS.md
-4. **If architecture changes:** Update `atris/MAP.md` with new structure
-5. **Follow agent workflow:** navigator (find) → executor (build) → validator (verify)
+1. **Execute first, research only if needed** — Run commands/tools directly. Don't search docs first—see what happens, then investigate if it fails. Saves context.
+2. **Before any change:** Read `atris/MAP.md` to find relevant files/components
+3. **When starting a task:** Check `atris/TASK_CONTEXTS.md` for existing tasks or add new one
+4. **After completing task:** Delete task from TASK_CONTEXTS.md
+5. **If architecture changes:** Update `atris/MAP.md` with new structure
+6. **Follow agent workflow:** navigator (find) → executor (build) → validator (verify)
 
 **Key files:**
 - `atris/PERSONA.md` - How to communicate and work (READ THIS FIRST)

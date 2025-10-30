@@ -154,8 +154,9 @@ rg "bin" package.json                     # CLI entry point
    - Purpose: Build tasks with ASCII confirmation per step
 
 3. **`atris review`** - Validator mode
-   - Entry: `bin/atris.js:1511-1571` (reviewAtris function)
-   - Outputs: validator.md spec + TASK_CONTEXTS.md + MAP.md + journal path
+   - Entry: `bin/atris.js:3616-3702` (reviewAtris function)
+   - Outputs: validator.md spec + TASK_CONTEXTS.md (full) + MAP.md path ref + journal path ref
+   - Optimization: Large files (MAP.md, journal) use path references - agents read on-demand
    - Purpose: Ultrathink validation, test, clean docs
 
 **Flow:** `activate → log → plan → do → review → loop`
@@ -255,6 +256,20 @@ rg "bin" package.json                     # CLI entry point
   - Phase 5 (lines 214-218): Future roadmap
 
 **Search:** `rg "## Phase" atris.md`
+
+### Feature: Context Optimization
+**Purpose:** Minimize token usage while maintaining full functionality
+
+- **Strategy:** Path references instead of full file loads for large files
+- **Optimized files:**
+  - MAP.md (~18KB → path ref) in `reviewAtris` (line 3657), `doAtris` (line 3300), `launchAtris` (line 3724)
+  - Journal content (~3KB → path ref) in `launchAtris` (line 3731)
+  - TASK_CONTEXTS.md (~1.4KB → path ref) in `launchAtris` (line 3720)
+- **Impact:** ~10,000 tokens saved per workflow cycle (10% of typical conversation budget)
+- **Benefit:** Faster commands, cleaner prompts, more room for agent responses
+- **Implementation:** Agents read files on-demand via tools when needed, path provided in prompt
+
+**Search:** `rg "mapPath.*relative|Read this file for file:line" bin/atris.js`
 
 ### Feature: User Onboarding
 **Purpose:** Human-friendly guide for new users

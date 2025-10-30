@@ -8,19 +8,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working on the 
 
 1. **Adopt the ATRIS personality** — Read `atris/PERSONA.md` first. It defines how to work here: fast, focused, ruthlessly efficient. 3-4 sentences max, ASCII visualizations for planning, anti-slop mindset.
 
-2. **Load context** — Run `atris activate` to load your journal, MAP.md (navigation), and TASK_CONTEXTS.md (current work). No login required.
+2. **Execute first, research only if needed** — Run commands/tools directly. Don't search docs first—see what happens, then investigate if it fails. Saves context.
 
-3. **Find what you need** — Always reference `atris/MAP.md` before making changes. It has exact file:line references for every component.
+3. **Load context** — Run `atris activate` to load your journal, MAP.md (navigation), and TASK_CONTEXTS.md (current work). No login required.
 
-4. **Claim and complete tasks** — Check `atris/TASK_CONTEXTS.md`, claim a task, build it, then delete it when done (validator cleans up the final state).
+4. **Find what you need** — Always reference `atris/MAP.md` before making changes. It has exact file:line references for every component.
 
-5. **Use the agent workflow** — Navigator (plan) → Executor (build) → Validator (review). Each has specific responsibilities in `atris/agent_team/`.
+5. **Claim and complete tasks** — Check `atris/TASK_CONTEXTS.md`, claim a task, build it, then delete it when done (validator cleans up the final state).
+
+6. **Use the agent workflow** — Navigator (plan) → Executor (build) → Validator (review). Each has specific responsibilities in `atris/agent_team/`.
 
 ---
 
 ## What ATRIS Is
 
-ATRIS is a Node.js CLI package (v1.5.1) that transforms codebases into AI-navigable workspaces. Instead of "where is the auth logic?" you get exact file:line answers in seconds.
+ATRIS is a Node.js CLI package (v1.5.5) that transforms codebases into AI-navigable workspaces. Instead of "where is the auth logic?" you get exact file:line answers in seconds.
 
 **The system works like this:**
 - Users run `atris init` → creates `atris/` folder with templates
@@ -362,7 +364,7 @@ These are anti-patterns. Don't do them:
 - **atris/GETTING_STARTED.md** — User onboarding guide
 - **atris/MAP.md** — Navigation guide with file:line references
 - **atris/agent_team/*.md** — Agent specs (navigator, executor, validator)
-- **package.json** — Version (1.5.1), bin config, no external dependencies
+- **package.json** — Version (1.5.5), bin config, no external dependencies
 - **bin/atris.js** — Complete CLI (all commands, 3,314 lines)
 
 ---

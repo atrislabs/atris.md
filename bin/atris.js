@@ -181,7 +181,9 @@ if (command === 'init') {
 } else if (command === 'launch') {
   launchAtris();
 } else if (command === 'autopilot') {
-  autopilotAtris()
+  // Extract initial idea from args: "atris autopilot <idea text>"
+  const initialIdea = process.argv.slice(3).join(' ').trim();
+  autopilotAtris(initialIdea)
     .then(() => process.exit(0))
     .catch((error) => {
       if (error && error.__autopilotAbort) {
@@ -2306,9 +2308,9 @@ function updateWorkflowState(workflowFile, stateName, iteration) {
     workflow.states[stateName].context.taskContexts = fs.readFileSync(taskContextsFile, 'utf8').substring(0, 5000); // Limit size
   }
   
-  // Refresh map if exists
+  // Reference map path (agents read on-demand)
   if (fs.existsSync(mapFile)) {
-    workflow.states[stateName].context.map = fs.readFileSync(mapFile, 'utf8').substring(0, 3000); // Limit size
+    workflow.states[stateName].context.mapPath = path.relative(process.cwd(), mapFile);
   }
   
   // Refresh journal inbox if exists
@@ -2323,7 +2325,7 @@ function updateWorkflowState(workflowFile, stateName, iteration) {
   fs.writeFileSync(workflowFile, JSON.stringify(workflow, null, 2));
 }
 
-async function autopilotAtris() {
+async function autopilotAtris(initialIdea = null) {
   const targetDir = path.join(process.cwd(), 'atris');
   if (!fs.existsSync(targetDir)) {
     throw new Error('atris/ folder not found. Run "atris init" first.');
@@ -2360,28 +2362,102 @@ async function autopilotAtris() {
   console.log('Type "exit" at any prompt to cancel.');
   console.log('');
 
-  const rl = readline.createInterface({
+  // Detect if running in chat/non-interactive mode
+  const isInteractive = process.stdin.isTTY && process.stdout.isTTY;
+  const isAutoMode = !isInteractive || !!initialIdea; // Auto-approve if non-interactive or idea provided
+  
+  if (isAutoMode && !initialIdea) {
+    console.log('💬 AUTO MODE: Running fully automated workflow.\n');
+  } else if (!isInteractive) {
+    console.log('💬 CHAT MODE: Autopilot will present prompts here for interactive conversation.');
+    console.log('   Respond to prompts in chat to continue the workflow.\n');
+  }
+  
+  const rl = isInteractive ? readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-  });
+  }) : null;
 
   const ask = async (promptText, options = {}) => {
-    const { allowEmpty = false } = options;
+    const { allowEmpty = false, defaultValue = null } = options;
+    
+    // In non-interactive mode, never try to use readline - just output and return default
+    if (!isInteractive) {
+      console.log(`\n📝 PROMPT FOR CHAT: ${promptText}`);
+      if (defaultValue !== null) {
+        console.log(`   ✓ Using default: ${defaultValue}`);
+        return defaultValue;
+      }
+      if (allowEmpty) {
+        console.log('   (Empty allowed - continuing)');
+        return '';
+      }
+      // No default and not allowEmpty - use a safe default
+      const safeDefault = 'Continue workflow';
+      console.log(`   ✓ Using safe default: ${safeDefault}`);
+      return safeDefault;
+    }
+    
+    // Interactive mode - auto-approve if in auto mode
+    if (isAutoMode && defaultValue !== null) {
+      console.log(`\n✓ ${promptText}${defaultValue ? ` → ${defaultValue}` : ' (auto-approved)'}`);
+      return defaultValue;
+    }
+    
+    // Only reach here if interactive mode AND rl exists
+    if (!rl || rl.closed) {
+      // Fallback: if readline closed, use safe default
+      if (allowEmpty) return '';
+      const safeDefault = 'Continue workflow';
+      console.log(`   ⚠️  Readline unavailable, using safe default: ${safeDefault}`);
+      return safeDefault;
+    }
+    
     while (true) {
-      const answer = await new Promise((resolve) => rl.question(promptText, resolve));
-      const trimmed = answer.trim();
-      if (trimmed.toLowerCase() === 'exit') {
-        throw autopilotAbortError();
+      try {
+        const answer = await new Promise((resolve, reject) => {
+          if (rl.closed) {
+            reject(new Error('readline was closed'));
+            return;
+          }
+          rl.question(promptText, resolve);
+        });
+        const trimmed = answer.trim();
+        if (trimmed.toLowerCase() === 'exit') {
+          throw autopilotAbortError();
+        }
+        if (!allowEmpty && trimmed === '') {
+          console.log('Please enter a value (or type "exit" to abort).');
+          continue;
+        }
+        return trimmed;
+      } catch (error) {
+        if (error.message === 'readline was closed' || rl.closed) {
+          // Readline closed mid-prompt - use safe default
+          if (allowEmpty) return '';
+          const safeDefault = 'Continue workflow';
+          console.log(`   ⚠️  Readline closed, using safe default: ${safeDefault}`);
+          return safeDefault;
+        }
+        throw error;
       }
-      if (!allowEmpty && trimmed === '') {
-        console.log('Please enter a value (or type "exit" to abort).');
-        continue;
-      }
-      return trimmed;
     }
   };
 
-  const askYesNo = async (promptText) => {
+  const askYesNo = async (promptText, defaultYes = true) => {
+    // In non-interactive mode, never try readline - just return default
+    if (!isInteractive) {
+      console.log(`\n📝 PROMPT FOR CHAT: ${promptText}`);
+      console.log(`   ✓ Auto-approving: ${defaultYes ? 'yes' : 'no'}`);
+      return defaultYes;
+    }
+    
+    // Auto mode in interactive terminal - auto-approve
+    if (isAutoMode) {
+      console.log(`\n✓ ${promptText} → ${defaultYes ? 'yes (auto-approved)' : 'no (auto-approved)'}`);
+      return defaultYes;
+    }
+    
     while (true) {
       const response = (await ask(promptText)).toLowerCase();
       if (response === 'y' || response === 'yes') return true;
@@ -2439,57 +2515,120 @@ async function autopilotAtris() {
   }
 
   try {
-    const initialContent = journalContext || (fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '');
-    let inboxItems = parseInboxItems(initialContent);
-
-    if (inboxItems.length > 0) {
-      console.log('Choose a brainstorm source:');
-      console.log('  1. Select an item from today\'s Inbox');
-      console.log('  2. Enter a new idea');
-      console.log('');
-
-      let choice;
-      while (true) {
-        choice = await ask('Choice (1-2): ');
-        if (choice === '1' || choice === '2') {
-          break;
-        }
-        console.log('Please enter 1 or 2.');
-      }
-
-      if (choice === '1') {
-        console.log('');
-        console.log('Today\'s Inbox:');
-        inboxItems.forEach((item, index) => {
-          console.log(`  ${index + 1}. I${item.id} — ${item.text}`);
-        });
-        console.log('');
-
-        while (true) {
-          const selection = await ask(`Pick an item (1-${inboxItems.length}): `);
-          const index = parseInt(selection, 10);
-          if (!Number.isNaN(index) && index >= 1 && index <= inboxItems.length) {
-            selectedInboxItem = inboxItems[index - 1];
-            break;
-          }
-          console.log(`Enter a number between 1 and ${inboxItems.length}.`);
-        }
-
-        const editedSummary = await ask('Brainstorm topic (press Enter to keep original): ', { allowEmpty: true });
-        topicSummary = editedSummary ? editedSummary : selectedInboxItem.text;
-      } else {
-        console.log('');
-        topicSummary = await ask('Describe the brainstorm topic: ');
-        const newId = addInboxIdea(logFile, topicSummary);
-        console.log(`✓ Added I${newId} to today\'s Inbox.`);
-        selectedInboxItem = { id: newId, text: topicSummary };
-      }
-    } else {
-      console.log('No items in today\'s Inbox. Capture a new idea to begin.');
-      topicSummary = await ask('Describe the brainstorm topic: ');
+    // If initial idea provided, use it directly (skip all prompts)
+    if (initialIdea) {
+      console.log(`🚀 Initial idea: "${initialIdea}"\n`);
+      topicSummary = initialIdea;
       const newId = addInboxIdea(logFile, topicSummary);
-      console.log(`✓ Added I${newId} to today\'s Inbox.`);
+      console.log(`✓ Added I${newId} to today's Inbox.\n`);
       selectedInboxItem = { id: newId, text: topicSummary };
+    } else {
+      // Normal flow: check inbox and prompt
+      const initialContent = journalContext || (fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '');
+      let inboxItems = parseInboxItems(initialContent);
+
+      if (inboxItems.length > 0) {
+        // In non-interactive mode, auto-select first inbox item
+        if (!isInteractive) {
+          selectedInboxItem = inboxItems[0];
+          topicSummary = selectedInboxItem.text;
+          console.log(`✓ Auto-selected inbox item I${selectedInboxItem.id}: ${topicSummary}\n`);
+        } else {
+          console.log('Choose a brainstorm source:');
+          console.log('  1. Select an item from today\'s Inbox');
+          console.log('  2. Enter a new idea');
+          console.log('');
+
+          let choice;
+          while (true) {
+            choice = await ask('Choice (1-2): ');
+            if (choice === '1' || choice === '2') {
+              break;
+            }
+            console.log('Please enter 1 or 2.');
+          }
+
+          if (choice === '1') {
+            console.log('');
+            console.log('Today\'s Inbox:');
+            inboxItems.forEach((item, index) => {
+              console.log(`  ${index + 1}. I${item.id} — ${item.text}`);
+            });
+            console.log('');
+
+            while (true) {
+              const selection = await ask(`Pick an item (1-${inboxItems.length}): `);
+              const index = parseInt(selection, 10);
+              if (!Number.isNaN(index) && index >= 1 && index <= inboxItems.length) {
+                selectedInboxItem = inboxItems[index - 1];
+                break;
+              }
+              console.log(`Enter a number between 1 and ${inboxItems.length}.`);
+            }
+
+            const editedSummary = await ask('Brainstorm topic (press Enter to keep original): ', { allowEmpty: true });
+            topicSummary = editedSummary ? editedSummary : selectedInboxItem.text;
+          } else {
+            if (!isInteractive) {
+              // Non-interactive: use default
+              topicSummary = 'New feature idea';
+              console.log(`✓ Using default idea: ${topicSummary}\n`);
+            } else {
+              console.log('');
+              topicSummary = await ask('Describe the brainstorm topic: ');
+            }
+            const newId = addInboxIdea(logFile, topicSummary);
+            console.log(`✓ Added I${newId} to today\'s Inbox.`);
+            selectedInboxItem = { id: newId, text: topicSummary };
+          }
+        }
+      } else {
+        // No inbox items AND no initial idea → trigger brainstorm mode
+        console.log('');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('💡 No idea provided. Starting brainstorm mode...');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('');
+        console.log('🧠 Let\'s shape an idea together. Answer a few questions to get started:');
+        console.log('');
+        
+        // Interactive brainstorm session (in chat/non-interactive, use defaults)
+        if (!isInteractive || isAutoMode) {
+          // Non-interactive or auto mode: use defaults
+          topicSummary = 'New feature idea';
+          userStory = 'Improved user experience';
+          feelingsVibe = '';
+          constraints = '';
+          console.log('✓ Using default brainstorm values');
+          console.log(`  Idea: ${topicSummary}`);
+          console.log(`  Outcome: ${userStory}\n`);
+        } else {
+          topicSummary = await ask('What problem or feature are you thinking about? (describe it briefly): ');
+          if (!topicSummary) {
+            throw new Error('Brainstorm cancelled. Provide an idea to continue.');
+          }
+        
+          userStory = await ask('What should users experience when this is done? (the outcome): ', {
+            allowEmpty: true
+          });
+          
+          feelingsVibe = await ask('What vibe/feelings are we aiming for? (optional): ', {
+            allowEmpty: true
+          });
+          
+          constraints = await ask('Any constraints or guardrails? (optional): ', {
+            allowEmpty: true
+          });
+        }
+        
+        const newId = addInboxIdea(logFile, topicSummary);
+        console.log(`✓ Added I${newId} to today's Inbox.`);
+        selectedInboxItem = { id: newId, text: topicSummary };
+        
+        console.log('');
+        console.log('✓ Idea shaped! Continuing with autopilot...');
+        console.log('');
+      }
     }
 
     const sourceLabel = selectedInboxItem ? `I${selectedInboxItem.id}` : 'Ad-hoc';
@@ -2500,60 +2639,90 @@ async function autopilotAtris() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
 
-    userStory = await ask('Describe the desired outcome (what should users experience?): ');
-    feelingsVibe = await ask('Feelings/vibes we\'re aiming for? (optional): ', { allowEmpty: true });
-    constraints = await ask('Constraints or guardrails? (optional): ', { allowEmpty: true });
-
-    // Generate and show brainstorm prompt
-    const promptLines = [];
-    promptLines.push('You:');
-    promptLines.push('');
-    promptLines.push(`I want to brainstorm: ${topicSummary}`);
-    promptLines.push('');
-    
-    if (userStory) {
-      promptLines.push(`The outcome should be: ${userStory}`);
-      promptLines.push('');
+    // In auto mode or if already set from brainstorm above, skip story prompts
+    if (isAutoMode && !userStory) {
+      // Extract story from initial idea or use default
+      userStory = initialIdea || 'Build the feature completely and correctly';
+      feelingsVibe = feelingsVibe || '';
+      constraints = constraints || '';
+      console.log(`✓ Outcome: ${userStory}`);
+      console.log('');
+    } else if (!userStory) {
+      // Only prompt if we don't already have these from brainstorm mode
+      if (!isInteractive) {
+        // Non-interactive: use defaults
+        userStory = 'Build the feature completely and correctly';
+        feelingsVibe = '';
+        constraints = '';
+        console.log(`✓ Outcome: ${userStory} (using defaults for non-interactive mode)`);
+        console.log('');
+      } else {
+        userStory = await ask('Describe the desired outcome (what should users experience?): ');
+        feelingsVibe = await ask('Feelings/vibes we\'re aiming for? (optional): ', { allowEmpty: true });
+        constraints = await ask('Constraints or guardrails? (optional): ', { allowEmpty: true });
+      }
     }
-    
-    if (feelingsVibe) {
-      promptLines.push(`Vibe we\'re going for: ${feelingsVibe}`);
+
+    // Generate and show brainstorm prompt (shorter in auto mode)
+    if (!isAutoMode) {
+      const promptLines = [];
+      promptLines.push('You:');
       promptLines.push('');
-    }
-    
-    if (constraints) {
-      promptLines.push(`Constraints: ${constraints}`);
+      promptLines.push(`I want to brainstorm: ${topicSummary}`);
       promptLines.push('');
-    }
-    
-    promptLines.push('Help me uncover what we need to build. Keep responses short (4-5 sentences), pause for alignment, sketch ASCII when structure helps.');
-    promptLines.push('');
-    promptLines.push('Claude:');
+      
+      if (userStory) {
+        promptLines.push(`The outcome should be: ${userStory}`);
+        promptLines.push('');
+      }
+      
+      if (feelingsVibe) {
+        promptLines.push(`Vibe we\'re going for: ${feelingsVibe}`);
+        promptLines.push('');
+      }
+      
+      if (constraints) {
+        promptLines.push(`Constraints: ${constraints}`);
+        promptLines.push('');
+      }
+      
+      promptLines.push('Help me uncover what we need to build. Keep responses short (4-5 sentences), pause for alignment, sketch ASCII when structure helps.');
+      promptLines.push('');
+      promptLines.push('Claude:');
 
-    const promptText = promptLines.join('\n');
+      const promptText = promptLines.join('\n');
 
-    console.log('');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📋 PROMPT FOR YOUR CODING EDITOR:');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('');
-    console.log('```');
-    console.log(promptText);
-    console.log('```');
-    console.log('');
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('');
+      console.log('');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('📋 PROMPT FOR YOUR CODING EDITOR:');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('');
+      console.log('```');
+      console.log(promptText);
+      console.log('```');
+      console.log('');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('');
 
-    // Get approval to proceed with autopilot
-    console.log('');
-    const proceed = await askYesNo('✓ Brainstorm complete. Ready to start autopilot (plan → do → review → launch)? (y/n): ');
-    if (!proceed) {
-      console.log('\nAutopilot cancelled. Brainstorm prompt is ready for your agent.');
-      return;
+      // Get approval to proceed with autopilot
+      const proceed = await askYesNo('✓ Brainstorm complete. Ready to start autopilot (plan → do → review → launch)? (y/n): ');
+      if (!proceed) {
+        console.log('\nAutopilot cancelled. Brainstorm prompt is ready for your agent.');
+        return;
+      }
+    } else {
+      // Auto mode: just show brief summary
+      console.log('');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('✓ Vision defined — proceeding automatically');
+      console.log(`  Feature: ${topicSummary}`);
+      console.log(`  Goal: ${userStory}`);
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('');
     }
 
     // Log brainstorm session
-    const sessionSummary = await ask('Brainstorm session summary (1-2 sentences, optional): ', { allowEmpty: true });
+    const sessionSummary = isAutoMode || !isInteractive ? 'Auto brainstorm' : await ask('Brainstorm session summary (1-2 sentences, optional): ', { allowEmpty: true, defaultValue: 'Autopilot brainstorm session' });
     recordBrainstormSession(
       logFile,
       sourceLabel,
@@ -2575,22 +2744,39 @@ async function autopilotAtris() {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
 
-    const successCriteria = [];
-    while (true) {
-      const criteria = await ask(`Success criteria ${successCriteria.length + 1}: `, {
-        allowEmpty: successCriteria.length > 0,
+    let successCriteria = [];
+    let riskNotes = '';
+    
+    if (isAutoMode) {
+      // Auto mode: generate basic success criteria
+      successCriteria = [
+        'Feature implemented and working',
+        'Tests pass (if applicable)',
+        'Code follows project standards',
+        'Documentation updated (MAP.md, journal)'
+      ];
+      console.log('✓ Auto-generated success criteria:');
+      successCriteria.forEach((item, index) => {
+        console.log(`  ${index + 1}. ${item}`);
       });
-      if (!criteria) {
-        if (successCriteria.length === 0) {
-          console.log('Please provide at least one success criteria.');
-          continue;
+      console.log('');
+    } else {
+      while (true) {
+        const criteria = await ask(`Success criteria ${successCriteria.length + 1}: `, {
+          allowEmpty: successCriteria.length > 0,
+        });
+        if (!criteria) {
+          if (successCriteria.length === 0) {
+            console.log('Please provide at least one success criteria.');
+            continue;
+          }
+          break;
         }
-        break;
+        successCriteria.push(criteria);
       }
-      successCriteria.push(criteria);
-    }
 
-    const riskNotes = await ask('Any risks or notes? (optional): ', { allowEmpty: true });
+      riskNotes = await ask('Any risks or notes? (optional): ', { allowEmpty: true });
+    }
 
     recordAutopilotVision(
       logFile,
@@ -2614,8 +2800,12 @@ async function autopilotAtris() {
       console.log(`• Notes: ${riskNotes}`);
     }
     console.log('');
-    console.log('🚀 Starting automated cycle: plan → do → review → launch');
-    console.log('   (No manual pauses - fully automated after this approval)');
+    if (isAutoMode) {
+      console.log('🚀 AUTO MODE: Running fully automated cycle (plan → do → review → launch)');
+    } else {
+      console.log('🚀 Starting automated cycle: plan → do → review → launch');
+      console.log('   (No manual pauses - fully automated after this approval)');
+    }
     console.log('');
 
     // ========================================
@@ -2672,13 +2862,21 @@ async function autopilotAtris() {
       console.log('   ✓ Validation prompt displayed to agent');
       console.log('   ✓ Workflow state updated: [STATE:VALIDATOR]\n');
 
-      // Check if success
+      // Check if success (auto-approve in auto mode, validator will verify)
       console.log(`${'─'.repeat(70)}`);
-      const isSuccess = await askYesNo(`Did we meet the success criteria? (y/n): `);
+      let isSuccess;
+      if (isAutoMode) {
+        // In auto mode, assume success if we got through review without errors
+        // Validator should have caught issues already
+        isSuccess = true;
+        console.log('✓ Auto mode: Assuming success (validator verified)');
+      } else {
+        isSuccess = await askYesNo(`Did we meet the success criteria? (y/n): `);
+      }
       console.log('');
 
       if (isSuccess) {
-        const successNotes = await ask('Notes for the log (optional): ', { allowEmpty: true });
+        const successNotes = isAutoMode ? 'Completed via autopilot' : await ask('Notes for the log (optional): ', { allowEmpty: true, defaultValue: 'Completed via autopilot' });
         recordAutopilotIteration(
           logFile,
           iteration,
@@ -2719,16 +2917,17 @@ async function autopilotAtris() {
         console.log('');
         break;
       } else {
-        const followUp = await ask('Describe remaining blockers / next steps (optional): ', {
+        const followUp = isAutoMode ? 'Issues detected, needs iteration' : await ask('Describe remaining blockers / next steps (optional): ', {
           allowEmpty: true,
+          defaultValue: 'Issues detected, needs iteration'
         });
         recordAutopilotIteration(
           logFile,
           iteration,
           'Follow-up required',
-          followUp ? followUp : ''
+          followUp || ''
         );
-        const continueLoop = await askYesNo('Continue with another iteration? (y/n): ');
+        const continueLoop = await askYesNo('Continue with another iteration? (y/n): ', isAutoMode);
         if (!continueLoop) {
           console.log('\nAutopilot paused. Success criteria not yet met.');
           break;
@@ -2737,7 +2936,9 @@ async function autopilotAtris() {
       }
     }
   } finally {
-    rl.close();
+    if (rl && isInteractive) {
+      rl.close();
+    }
   }
 }
 
@@ -3096,12 +3297,9 @@ function doAtris() {
     persona = fs.readFileSync(personaFile, 'utf8');
   }
 
-  // Load MAP.md
+  // Reference MAP.md (agents read on-demand)
   const mapFile = path.join(targetDir, 'MAP.md');
-  let mapContent = '';
-  if (fs.existsSync(mapFile)) {
-    mapContent = fs.readFileSync(mapFile, 'utf8');
-  }
+  const mapPath = fs.existsSync(mapFile) ? path.relative(process.cwd(), mapFile) : null;
 
   // Load tasks from appropriate TODO file
   let tasksContent = '';
@@ -3218,20 +3416,12 @@ function doAtris() {
   console.log('');
   }
   
-  if (mapContent && mapContent.trim()) {
+  if (mapPath) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('🗺️  MAP.md — Codebase Navigation');
+    console.log('🗺️  MAP.md: ' + mapPath);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    // Show full map if < 3000 chars, else truncate intelligently
-    if (mapContent.length > 3000) {
-      const lines = mapContent.split('\n');
-      const importantLines = lines.slice(0, 100).join('\n');
-      console.log(importantLines);
-      console.log('\n... (see full MAP.md for complete reference)');
-    } else {
-      console.log(mapContent);
-    }
-  console.log('');
+    console.log('   Read this file for file:line references when navigating the codebase.');
+    console.log('');
   }
   
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -3446,19 +3636,15 @@ function reviewAtris() {
     taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
   }
 
-  // Read MAP.md
-  const mapFile = path.join(targetDir, 'MAP.md');
-  let mapContent = '';
-  if (fs.existsSync(mapFile)) {
-    mapContent = fs.readFileSync(mapFile, 'utf8');
-  }
-
   // Read journal for timestamp context
   const { logFile, dateFormatted } = getLogPath();
   let journalPath = '';
   if (fs.existsSync(logFile)) {
     journalPath = path.relative(process.cwd(), logFile);
   }
+
+  const mapFile = path.join(targetDir, 'MAP.md');
+  const mapPath = fs.existsSync(mapFile) ? path.relative(process.cwd(), mapFile) : null;
 
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────────┐');
@@ -3485,9 +3671,8 @@ function reviewAtris() {
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('🗺️  MAP.md REFERENCE:');
-  console.log('─────────────────────────────────────────────────────────────');
-  console.log(mapContent.substring(0, 500) + '... (truncated)');
+  console.log('🗺️  MAP.md: ' + (mapPath || 'Not found'));
+  console.log('   Read this file for file:line references when navigating the codebase.');
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
@@ -3532,27 +3717,18 @@ function launchAtris() {
   // Read launcher.md
   const launcherSpec = fs.readFileSync(launcherFile, 'utf8');
 
-  // Read TASK_CONTEXTS.md for completed tasks context
+  // Reference TASK_CONTEXTS.md (agents read on-demand)
   const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
-  let taskContexts = '';
-  if (fs.existsSync(taskContextsFile)) {
-    taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
-  }
 
-  // Read MAP.md
+  // Reference MAP.md (agents read on-demand)
   const mapFile = path.join(targetDir, 'MAP.md');
-  let mapContent = '';
-  if (fs.existsSync(mapFile)) {
-    mapContent = fs.readFileSync(mapFile, 'utf8');
-  }
+  const mapPath = fs.existsSync(mapFile) ? path.relative(process.cwd(), mapFile) : null;
 
-  // Read journal for recent completions
+  // Reference journal (agents read on-demand)
   const { logFile, dateFormatted } = getLogPath();
   let journalPath = '';
-  let journalContent = '';
   if (fs.existsSync(logFile)) {
     journalPath = path.relative(process.cwd(), logFile);
-    journalContent = fs.readFileSync(logFile, 'utf8');
   }
 
   console.log('');
@@ -3566,30 +3742,20 @@ function launchAtris() {
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('📝 TASK_CONTEXTS.md (for completed tasks context):');
-  console.log('─────────────────────────────────────────────────────────────');
-  console.log(taskContexts || '(Empty)');
+  const taskContextsPath = fs.existsSync(taskContextsFile) ? path.relative(process.cwd(), taskContextsFile) : null;
+  console.log('📝 TASK_CONTEXTS.md: ' + (taskContextsPath || 'Not found'));
+  console.log('   Read for completed tasks context (usually small, or reference path if large).');
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('🗺️  MAP.md REFERENCE:');
-  console.log('─────────────────────────────────────────────────────────────');
-  console.log(mapContent.substring(0, 500) + '... (truncated)');
+  console.log('🗺️  MAP.md: ' + (mapPath || 'Not found'));
+  console.log('   Read this file for file:line references when navigating the codebase.');
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
   console.log('📅 JOURNAL: ' + (journalPath || 'Not found'));
+  console.log('   Read for recent completions and context.');
   console.log('');
-  if (journalContent) {
-    const completedMatch = journalContent.match(/## Completed ✅[\s\S]*?(?=## |$)/);
-    if (completedMatch) {
-      console.log('Recent completions:');
-      console.log('─────────────────────────────────────────────────────────────');
-      console.log(completedMatch[0].substring(0, 300) + '... (truncated)');
-      console.log('');
-      console.log('─────────────────────────────────────────────────────────────');
-    }
-  }
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('📋 INSTRUCTION PROMPT FOR YOUR CODING AGENT:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

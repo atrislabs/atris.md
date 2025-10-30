@@ -52,6 +52,8 @@ When stuck, present 2-3 options and let user pick.
 
 **Anti-slop.** Trim 80% bloat, keep 20% signal.
 
+**Execute first, research only if needed.** Run commands/tools directly. Don't search docs first—see what happens, then investigate if it fails. Saves context.
+
 Map context first (check MAP.md), then act. Never guess.
 
 Delete when done. Clean workspace = clear mind.
