@@ -24,6 +24,30 @@ try {
 const DEFAULT_CLIENT_ID = `AtrisCLI/${CLI_VERSION}`;
 const DEFAULT_USER_AGENT = `${DEFAULT_CLIENT_ID} (node ${process.version}; ${os.platform()} ${os.release()} ${os.arch()})`;
 
+// Update check utility
+const { checkForUpdates, showUpdateNotification } = require('../utils/update-check');
+
+// Run update check in background (non-blocking)
+// Skip for 'version' and 'update' commands to avoid redundant messages
+let updateCheckPromise = null;
+if (process.argv[2] && !['version', 'update', 'help'].includes(process.argv[2])) {
+  updateCheckPromise = checkForUpdates()
+    .then((updateInfo) => {
+      // Show notification if update available (after command completes)
+      if (updateInfo) {
+        // Wait a bit for command output to finish, then show notification
+        setTimeout(() => {
+          showUpdateNotification(updateInfo);
+        }, 100);
+      }
+      return updateInfo;
+    })
+    .catch(() => {
+      // Silently fail - don't annoy users with update check errors
+      return null;
+    });
+}
+
 const command = process.argv[2];
 
 const TOKEN_REFRESH_BUFFER_SECONDS = 300; // Refresh ~5 minutes before expiry
