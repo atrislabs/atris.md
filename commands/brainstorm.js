@@ -1,0 +1,285 @@
+const fs = require('fs');
+const path = require('path');
+const readline = require('readline');
+const { getLogPath, ensureLogDirectory, createLogFile, parseInboxItems, addInboxIdea, removeInboxItemFromContent, recordBrainstormSession } = require('../lib/file-ops');
+const { loadConfig } = require('../utils/config');
+const { loadCredentials } = require('../utils/auth');
+const { apiRequestJson } = require('../utils/api');
+
+function brainstormAbortError() {
+  const error = new Error('Brainstorm cancelled by user.');
+  error.__brainstormAbort = true;
+  return error;
+}
+
+async function brainstormAtris() {
+  const targetDir = path.join(process.cwd(), 'atris');
+  if (!fs.existsSync(targetDir)) {
+    throw new Error('atris/ folder not found. Run "atris init" first.');
+  }
+
+  ensureLogDirectory();
+  const { logFile, dateFormatted } = getLogPath();
+  if (!fs.existsSync(logFile)) {
+    createLogFile(logFile, dateFormatted);
+  }
+
+  console.log('');
+  console.log('┌─────────────────────────────────────────────────────────────┐');
+  console.log('│ ATRIS Brainstorm — structured prompt generator              │');
+  console.log('└─────────────────────────────────────────────────────────────┘');
+  console.log('');
+  console.log(`Date: ${dateFormatted}`);
+  console.log('Type "exit" at any prompt to cancel.');
+  console.log('');
+
+  // Try to fetch latest journal entry from backend (optional)
+  let journalContext = '';
+  const config = loadConfig();
+  const credentials = loadCredentials();
+  
+  if (config.agent_id && credentials && credentials.token) {
+    try {
+      console.log('📖 Fetching latest journal entry from AtrisOS...');
+      const journalResult = await apiRequestJson(`/agents/${config.agent_id}/journal/today`, {
+        method: 'GET',
+        token: credentials.token,
+      });
+      
+      if (journalResult.ok && journalResult.data?.content) {
+        journalContext = journalResult.data.content;
+        console.log('✓ Loaded journal entry from backend');
+      } else {
+        const listResult = await apiRequestJson(`/agents/${config.agent_id}/journal/?limit=1`, {
+          method: 'GET',
+          token: credentials.token,
+        });
+        
+        if (listResult.ok && listResult.data?.entries?.length > 0) {
+          journalContext = listResult.data.entries[0].content || '';
+          console.log('✓ Loaded latest journal entry from backend');
+        }
+      }
+    } catch (error) {
+      console.log('ℹ️  Using local journal file (backend unavailable)');
+    }
+    console.log('');
+  }
+
+  // Fallback to local log file if no backend context
+  if (!journalContext) {
+    if (fs.existsSync(logFile)) {
+      journalContext = fs.readFileSync(logFile, 'utf8');
+    }
+  }
+
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  const ask = async (promptText, options = {}) => {
+    const { allowEmpty = false } = options;
+    while (true) {
+      const answer = await new Promise((resolve) => rl.question(promptText, resolve));
+      const trimmed = answer.trim();
+      if (trimmed.toLowerCase() === 'exit') {
+        throw brainstormAbortError();
+      }
+      if (!allowEmpty && trimmed === '') {
+        console.log('Please enter a value (or type "exit" to abort).');
+        continue;
+      }
+      return trimmed;
+    }
+  };
+
+  const askYesNo = async (promptText) => {
+    while (true) {
+      const response = (await ask(promptText)).toLowerCase();
+      if (response === 'y' || response === 'yes') return true;
+      if (response === 'n' || response === 'no') return false;
+      console.log('Please answer with "y" or "n" (or type "exit" to abort).');
+    }
+  };
+
+  let selectedInboxItem = null;
+  let topicSummary = '';
+
+  try {
+    const initialContent = journalContext || (fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '');
+    let inboxItems = parseInboxItems(initialContent);
+
+    if (inboxItems.length > 0) {
+      console.log('Choose a brainstorm source:');
+      console.log('  1. Select an item from today\'s Inbox');
+      console.log('  2. Enter a new idea');
+      console.log('');
+
+      let choice;
+      while (true) {
+        choice = await ask('Choice (1-2): ');
+        if (choice === '1' || choice === '2') {
+          break;
+        }
+        console.log('Please enter 1 or 2.');
+      }
+
+      if (choice === '1') {
+        console.log('');
+        console.log('Today\'s Inbox:');
+        inboxItems.forEach((item, index) => {
+          console.log(`  ${index + 1}. I${item.id} — ${item.text}`);
+        });
+        console.log('');
+
+        while (true) {
+          const selection = await ask(`Pick an item (1-${inboxItems.length}): `);
+          const index = parseInt(selection, 10);
+          if (!Number.isNaN(index) && index >= 1 && index <= inboxItems.length) {
+            selectedInboxItem = inboxItems[index - 1];
+            break;
+          }
+          console.log(`Enter a number between 1 and ${inboxItems.length}.`);
+        }
+
+        const editedSummary = await ask('Brainstorm topic (press Enter to keep original): ', { allowEmpty: true });
+        topicSummary = editedSummary ? editedSummary : selectedInboxItem.text;
+      } else {
+        console.log('');
+        topicSummary = await ask('Describe the brainstorm topic: ');
+        const newId = addInboxIdea(logFile, topicSummary);
+        console.log(`✓ Added I${newId} to today\'s Inbox.`);
+        selectedInboxItem = { id: newId, text: topicSummary };
+      }
+    } else {
+      console.log('No items in today\'s Inbox. Capture a new idea to begin.');
+      topicSummary = await ask('Describe the brainstorm topic: ');
+      const newId = addInboxIdea(logFile, topicSummary);
+      console.log(`✓ Added I${newId} to today\'s Inbox.`);
+      selectedInboxItem = { id: newId, text: topicSummary };
+    }
+
+    const sourceLabel = selectedInboxItem ? `I${selectedInboxItem.id}` : 'Ad-hoc';
+
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📖 Step 1: Craft the Story');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('What should the output be? How should it feel?');
+    console.log('This helps us capture the vision before diving into details.');
+    console.log('');
+
+    const userStory = await ask('Describe the desired outcome (what should users experience?): ');
+    const feelingsVibe = await ask('Feelings/vibes we\'re aiming for? (optional): ', { allowEmpty: true });
+
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🧠 Step 2: Brainstorm Session');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('Now let\'s uncover what we need to build.');
+    console.log('');
+
+    const constraints = await ask('Constraints or guardrails? (optional): ', { allowEmpty: true });
+
+    // Build concise, spaced-out prompt (4-5 sentences max, lots of spacing)
+    const promptLines = [];
+    
+    // Extract key snippets from journal if available (very brief)
+    let journalHint = '';
+    if (journalContext && journalContext.trim()) {
+      const maxHint = 200;
+      const lines = journalContext.split('\n').slice(0, 5).join(' ').trim();
+      if (lines.length > maxHint) {
+        journalHint = lines.substring(0, maxHint) + '...';
+      } else {
+        journalHint = lines;
+      }
+    }
+
+    promptLines.push('You:');
+    promptLines.push('');
+    promptLines.push(`I want to brainstorm: ${topicSummary}`);
+    promptLines.push('');
+    
+    if (userStory) {
+      promptLines.push(`The outcome should be: ${userStory}`);
+      promptLines.push('');
+    }
+    
+    if (feelingsVibe) {
+      promptLines.push(`Vibe we\'re going for: ${feelingsVibe}`);
+      promptLines.push('');
+    }
+    
+    if (journalHint) {
+      promptLines.push(`Recent context: ${journalHint}`);
+      promptLines.push('');
+    }
+    
+    if (constraints) {
+      promptLines.push(`Constraints: ${constraints}`);
+      promptLines.push('');
+    }
+    
+    promptLines.push('Help me uncover what we need to build. Keep responses short (4-5 sentences), pause for alignment, sketch ASCII when structure helps.');
+    promptLines.push('');
+    promptLines.push('Claude:');
+
+    const promptText = promptLines.join('\n');
+
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('📋 PROMPT FOR YOUR CODING EDITOR (Claude Code / Cursor / etc):');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+    console.log('Copy this prompt into your coding agent to start brainstorming:');
+    console.log('');
+    console.log('```');
+    console.log(promptText);
+    console.log('```');
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+
+    const logChoice = await askYesNo('Log this brainstorm session to today\'s journal? (y/n): ');
+    if (logChoice) {
+      const sessionSummary = await ask('Session summary (1-2 sentences): ');
+      const nextStepsRaw = await ask('Next steps (optional, separate with ";"): ', { allowEmpty: true });
+      const nextSteps = nextStepsRaw
+        ? nextStepsRaw.split(';').map((item) => item.trim()).filter(Boolean)
+        : [];
+      recordBrainstormSession(
+        logFile,
+        sourceLabel,
+        topicSummary,
+        userStory,
+        [],
+        [],
+        constraints,
+        '',
+        feelingsVibe || '',
+        nextSteps,
+        sessionSummary
+      );
+      if (selectedInboxItem) {
+        const archive = await askYesNo('Archive this Inbox idea now? (y/n): ');
+        if (archive) {
+          let latestContent = fs.readFileSync(logFile, 'utf8');
+          latestContent = removeInboxItemFromContent(latestContent, selectedInboxItem.id);
+          fs.writeFileSync(logFile, latestContent);
+          console.log(`✓ Archived I${selectedInboxItem.id} from Inbox.`);
+        }
+      }
+      console.log('✓ Brainstorm session logged.');
+    } else {
+      console.log('Skipped journaling. Prompt is ready for your agent.');
+    }
+
+    console.log('\nBrainstorm complete.');
+  } finally {
+    rl.close();
+  }
+}
+
+module.exports = { brainstormAtris };

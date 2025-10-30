@@ -103,6 +103,20 @@ rg "bin" package.json                     # CLI entry point
 
 **Search:** `rg "function visualizeAtris" bin/atris.js`
 
+### Feature: Brainstorm Prompt Builder (`atris brainstorm`)
+**Purpose:** Generate a natural, copy-paste prompt so Claude Code (or any agent) can start a brainstorm with context
+
+- **Entry point:** `bin/atris.js:1852-2076` (brainstormAtris function)
+- **Flow:**
+  - User picks an Inbox idea or types a fresh topic
+  - Captures optional goal, key points, context, constraints, tone, kickoff direction
+  - Prints a `You:` → `Claude:` conversation opener (3-4 sentence framing + ASCII reminder)
+  - Optionally logs session summary + next steps, and can archive the Inbox idea
+- **Outputs:** Prompt block ready to paste + optional journal entry (`## Notes`, Brainstorm Session)
+- **Used by:** Navigator before creating tasks; humans when they need creative support
+
+**Search:** `rg "brainstormAtris" bin/atris.js`
+
 ### Feature: Agent Activation Commands
 **Purpose:** Direct command activation of navigator/executor/validator agent modes
 
@@ -144,6 +158,28 @@ rg "bin" package.json                     # CLI entry point
 - **Value:** Parallel work visibility - see who's working on what without conflicts
 
 **Search:** `rg "function statusAtris" bin/atris.js`
+
+### Feature: Journal Analytics (`atris analytics`)
+**Purpose:** Show productivity insights from existing journal data (velocity, trends, patterns)
+
+- **Entry point:** `bin/atris.js:1982-2116` (analyticsAtris function)
+- **The Pareto Insight:** No new instrumentation needed - parses existing journal markdown
+- **Data Sources:**
+  - Completions: `- **C#: description**` pattern in Completed section
+  - Inbox items: `- **I#: description**` pattern in Inbox section
+  - Timestamps: `**HH:MM:SS**` pattern in Timestamps section
+  - Analyzes last 7 days of journals from `logs/YYYY/YYYY-MM-DD.md`
+- **Metrics Calculated:**
+  - Today's completions and inbox count
+  - Weekly total completions and average velocity (completions/day)
+  - Inbox trend (Growing/Shrinking/Stable)
+  - Most productive hour (based on timestamp frequency)
+  - Daily breakdown with visual bar chart
+- **Output:** Beautiful terminal display with emojis and visual charts
+- **Backend Integration:** Same parsing logic can be reused by backend to show analytics in dashboard
+- **Value:** Motivating insights without adding complexity - journal already contains all data
+
+**Search:** `rg "function analyticsAtris" bin/atris.js`
 
 ### Feature: Multi-Agent Task Coordination
 **Purpose:** Enable parallel work without conflicts - multiple agents/humans can work simultaneously

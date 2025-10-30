@@ -95,35 +95,27 @@ if (!command || command === 'help' || command === '--help' || command === '-h') 
   process.exit(0);
 }
 
-// Command handlers - using modular commands where available
-const { initAtris: initCmd } = require('../commands/init');
-const { syncAtris: syncCmd } = require('../commands/sync');
-const { logAtris: logCmd } = require('../commands/log');
-const { logSyncAtris: logSyncCmd } = require('../commands/log-sync');
-const { brainstormAtris: brainstormCmd } = require('../commands/brainstorm');
-const { loginAtris: loginCmd, logoutAtris: logoutCmd, whoamiAtris: whoamiCmd } = require('../commands/auth');
-const { showVersion: versionCmd } = require('../commands/version');
-
+// Command handlers
 if (command === 'init') {
-  initCmd();
+  initAtris();
 } else if (command === 'agent') {
   agentAtris();
 } else if (command === 'log') {
   const subcommand = process.argv[3];
   if (subcommand === 'sync') {
-    logSyncCmd()
+    logSyncAtris()
       .then(() => process.exit(0))
       .catch((error) => {
         console.error(`✗ Log sync failed: ${error.message || error}`);
         process.exit(1);
       });
   } else {
-    logCmd();
+    logAtris();
   }
 } else if (command === 'activate') {
   activateAtris();
 } else if (command === 'update') {
-  syncCmd();
+  syncAtris();
 } else if (command === 'chat') {
   chatAtris()
     .then(() => process.exit(0))
@@ -132,13 +124,13 @@ if (command === 'init') {
       process.exit(1);
     });
 } else if (command === 'version') {
-  versionCmd();
+  showVersion();
 } else if (command === 'login') {
-  loginCmd();
+  loginAtris();
 } else if (command === 'logout') {
-  logoutCmd();
+  logoutAtris();
 } else if (command === 'whoami') {
-  whoamiCmd();
+  whoamiAtris();
 } else if (command === 'visualize') {
   visualizeAtris();
 } else if (command === 'plan') {
@@ -167,7 +159,7 @@ if (command === 'init') {
       process.exit(1);
     });
 } else if (command === 'brainstorm') {
-  brainstormCmd()
+  brainstormAtris()
     .then(() => process.exit(0))
     .catch((error) => {
       if (error && error.__brainstormAbort) {
@@ -2702,27 +2694,8 @@ function planAtris() {
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📋 INSTRUCTION PROMPT FOR YOUR CODING AGENT:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('');
-  console.log('You are the Navigator. Take ideas from Inbox → break them down into perfect, manageable tasks.');
-  console.log('');
-  console.log('Your job:');
-  console.log('1. Read Inbox items above');
-  console.log('2. For each idea, break it into 3-4 concrete, actionable tasks');
-  console.log('3. Create visualizations (ASCII diagrams) for:');
-  console.log('   - Logic flows');
-  console.log('   - DB table structures');
-  console.log('   - Architecture changes');
-  console.log('   - UI/UX flows');
-  console.log('4. Get user approval on visualizations before writing tasks');
-  console.log('5. Write tasks to TASK_CONTEXTS.md in the Backlog section');
-  console.log('6. Take time here - quality over speed. Tasks should be so good a "systems player" follows them perfectly.');
-  console.log('');
-  console.log('Load journal context if needed to understand recent work.');
-  console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🎯 Now: Follow navigator spec to create tasks from Inbox');
+  console.log('   ↳ Reminder: run "atris visualize" to capture approval (steps + ASCII) before writing new tasks.');
   console.log('');
 }
 
@@ -2890,26 +2863,13 @@ function doAtris() {
   }
   
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📋 INSTRUCTION PROMPT FOR YOUR CODING AGENT:');
+  console.log('✅ YOU HAVE EVERYTHING — Now execute!');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
-  console.log('You are the Executor. Get it done, precisely, following instructions perfectly.');
-  console.log('');
-  console.log('Execution Modes:');
-  console.log('  • Single-shot: Complete all tasks automatically');
-  console.log('  • Step-by-step: Execute one task, pause for approval, continue');
-  console.log('');
-  console.log('Your process:');
-  console.log('1. Read tasks from TASK_CONTEXTS.md (shown above)');
-  console.log('2. Show ASCII visualization for complex changes (get approval)');
-  console.log('3. Execute tasks following executor spec precisely');
-  console.log('4. Move completed tasks to <completed> section');
-  console.log('5. Follow PERSONA.md for communication style');
-  console.log('6. Use MAP.md to navigate codebase');
-  console.log('');
-  console.log('User controls pace: Choose single-shot or step-by-step based on confidence.');
-  console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('Step 1: Read tasks above');
+  console.log('Step 2: Show ASCII visualization for confirmation');
+  console.log('Step 3: Execute one step at a time');
+  console.log('Step 4: Move completed tasks to <completed> section');
   console.log('');
 }
 
@@ -3144,30 +3104,7 @@ function reviewAtris() {
   console.log('');
   console.log('📅 JOURNAL: ' + (journalPath || 'Not found'));
   console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📋 INSTRUCTION PROMPT FOR YOUR CODING AGENT:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('');
-  console.log('You are the Validator. Auto-activated after "atris do" completes.');
-  console.log('');
-  console.log('Validation Loop:');
-  console.log('  1. Ultrathink (say "ultrathink", think 3 times)');
-  console.log('  2. Check requirements → build → edge cases → errors → integration');
-  console.log('  3. Run tests (unit, integration, linting, type checking)');
-  console.log('  4. If issues found: report → "atris do" fixes → "atris review" again');
-  console.log('  5. Repeat until: "✅ All good. Ready for human testing."');
-  console.log('');
-  console.log('Your job:');
-  console.log('  • Verify everything works');
-  console.log('  • Test thoroughly (unless user says no)');
-  console.log('  • Update docs if needed');
-  console.log('  • Clean TASK_CONTEXTS.md (move completed tasks)');
-  console.log('  • Extract learnings for journal');
-  console.log('  • Only approve when truly ready for human testing');
-  console.log('');
-  console.log('The cycle: do → review → [issues] → do → review → ✅ Ready');
-  console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🎯 Now: Use ultrathink → validate → update docs → clean TASK_CONTEXTS');
   console.log('');
 }
 
@@ -3241,27 +3178,8 @@ function launchAtris() {
       console.log('─────────────────────────────────────────────────────────────');
     }
   }
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('📋 INSTRUCTION PROMPT FOR YOUR CODING AGENT:');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
-  console.log('You are the Launcher. Ship it clean.');
-  console.log('');
-  console.log('Launch Workflow:');
-  console.log('  1. Document what was shipped (summary in journal)');
-  console.log('  2. Extract learnings (what worked? what would you do differently?)');
-  console.log('  3. Update MAP.md with new patterns/file locations');
-  console.log('  4. Update relevant docs (README, API docs, etc.)');
-  console.log('  5. Clean up (remove temp files, unused code, etc.)');
-  console.log('  6. Git commit + push to GitHub');
-  console.log('  7. Optional: Update changelog/blog (7 sentences max essay on what shipped)');
-  console.log('  8. Celebrate! 🎉');
-  console.log('');
-  console.log('Note: Use "atris log sync" to sync journal to backend.');
-  console.log('');
-  console.log('Output: Clean codebase, updated docs, pushed to GitHub, ready to celebrate.');
-  console.log('');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🎯 Now: Document → Extract learnings → Update MAP.md → Suggest publishing → Celebrate!');
   console.log('');
 }
 

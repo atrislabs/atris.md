@@ -105,6 +105,26 @@ Once the files are populated, you can interact with your agents:
 @validator check if the recent auth changes are safe to merge
 ```
 
+## Try the autopilot loop (optional)
+
+Need a guided work session? Run:
+
+```bash
+atris autopilot
+```
+
+Pick a vision (today's Inbox or a fresh idea), set success criteria, and follow the guided plan → do → review cycles. Each iteration gets logged, and you can type `exit` at any prompt to stop.
+
+## Launch a brainstorm (optional)
+
+Need to shape an idea before creating tasks? Run:
+
+```bash
+atris brainstorm
+```
+
+Answer a couple quick questions, generate a Claude Code-ready conversation starter (context + ASCII cue), and optionally log the brainstorm summary with next steps.
+
 ## Keeping ATRIS Updated
 
 When the ATRIS package updates with new features:

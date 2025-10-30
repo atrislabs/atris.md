@@ -25,6 +25,10 @@ This file provides guidance to any coding agent (Claude Code, Cursor, Windsurf, 
 
 **Quick Start:**
 1. Read PERSONA.md
-2. Run `atris activate` to load context
+2. Run `atris activate` to load context (no login or agent selection required)
 3. Check TASK_CONTEXTS.md for current work
 4. Use `atris visualize` to see plans before building
+5. Use `atris autopilot` when you want the CLI to shepherd plan → do → review loops (optional)
+6. Use `atris brainstorm` to generate a concise conversation starter before handing ideas to coding agents (optional)
+
+Need to chat with Atris cloud agents? Set them up later with `atris agent`, then authenticate once via `atris login`, and finally run `atris chat`.

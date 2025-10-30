@@ -45,6 +45,26 @@ atris login   # authenticate once for cloud sync + chat
 atris chat    # open an interactive session
 ```
 
+## Autopilot (beta)
+
+Guide the whole loop with one command:
+
+```bash
+atris autopilot
+```
+
+Pick a vision (Inbox item or fresh idea), define the success criteria, and the CLI will walk you through plan → do → review cycles until the validator signs off. Everything is logged back to today's journal; type `exit` at any prompt to bail out.
+
+## Brainstorm (beta)
+
+Need a structured prompt for an agent-led ideation session?
+
+```bash
+atris brainstorm
+```
+
+Answer a couple quick questions, get a ready-to-send conversation opener for Claude Code (with context + ASCII cue), and optionally log the session summary plus next steps.
+
 ---
 
 **License:** MIT | **Repo:** [github.com/atrislabs/atris.md](https://github.com/atrislabs/atris.md.git)

@@ -45,11 +45,28 @@ This spec defines how to transform any system (codebase, product, sales process,
 
 6. **Output:** `/atris/MAP.md` (target: 300-500 lines for large systems; scale to project size)
 
+7. **After MAP.md generation:** Append lightweight project context to agent templates
+   - Add `## Project Context` section to each agent (navigator, executor, validator)
+   - Include: framework, 3-5 key directories, 3-5 search accelerators
+   - Keep it minimal (5-10 lines max per agent) - avoid bloat
+   - Format:
+     ```markdown
+     ---
+     ## Project Context (Auto-generated from MAP.md)
+     - **Framework:** Next.js 14
+     - **Key dirs:** app/, components/, lib/
+     - **Search patterns:**
+       - Components: `rg "export default" components/`
+       - API routes: `rg "export async function" app/api/`
+     ```
+
 ---
 
-## Phase 2: Spawning Foundational Agents
+## Phase 2: Foundational Agent Templates
 
-After MAP.md exists, generate agent specs in `/atris/agent_team/` from MAP insights. Each agent has explicit guardrails.
+ATRIS ships with pre-built agent templates in `/atris/agent_team/` (copied during `atris init`). These templates provide battle-tested specs that work out of the box. Each agent has explicit guardrails.
+
+**Templates included:**
 
 ### Agent 1: **navigator.md** (in `/atris/agent_team/`)
 
@@ -207,20 +224,25 @@ After MAP.md exists, generate agent specs in `/atris/agent_team/` from MAP insig
 
 ## Phase 4: Activation & Handoff
 
-**When All Artifacts in `/atris/` Exist:**
+**After `atris init`, your workspace contains:**
 
 - ✅ `atris.md` (this spec)
-- ✅ `MAP.md` (navigation guide)
-- ✅ `agent_team/navigator.md` (question answerer)
-- ✅ `agent_team/executor.md` (task executor)
-- ✅ `agent_team/validator.md` (quality gatekeeper)
-- ✅ `TASK_CONTEXTS.md` (task bank)
+- ✅ `PERSONA.md` (agent communication style)
+- ✅ `GETTING_STARTED.md` (user guide)
+- ✅ `agent_team/navigator.md` (pre-built template)
+- ✅ `agent_team/executor.md` (pre-built template)
+- ✅ `agent_team/validator.md` (pre-built template)
+- ⏳ `MAP.md` (AI agent generates from codebase)
+- ⏳ `TASK_CONTEXTS.md` (AI agent generates from MAP)
+
+**Agent Enhancement:**
+After MAP.md generation, agents receive project context injection (framework, key dirs, search patterns). This keeps base templates clean while adding project-specific accelerators.
 
 **Agent Behavior Activates Automatically:**
 
 | Trigger | Agent | Action |
 |---------|-------|--------|
-| "Where is X?" | navigator | Answers with MAP.md:line reference |
+| "Where is X?" | navigator | Answers with MAP.md:line reference + project patterns |
 | "Do task Y" | executor | Extracts context, plans execution, cites file:line |
 | After change | validator | Checks validity, updates docs, blocks unsafe changes |
 | New agent joins | navigator | Reads MAP.md, immediately productive (no ramp-up) |
@@ -249,6 +271,14 @@ After MAP.md exists, generate agent specs in `/atris/agent_team/` from MAP insig
 
 **Daily Goal:** Inbox zero. All thoughts processed, tasks executed, docs updated.
 
+### CLI Shortcuts
+
+- `atris activate` — load today's context (MAP, TASK_CONTEXTS, log)
+- `atris visualize` — approval gate: 3-4 step summary + ASCII before creating tasks
+- `atris plan` / `atris do` / `atris review` — rapid agent activation for navigator / executor / validator
+- `atris autopilot` — guided plan → do → review loop with explicit success criteria and journaling
+- `atris brainstorm` — generate a Claude-ready brainstorm prompt and optionally log the session summary + next steps
+
 ---
 
 ## Phase 6: Future Roadmap (Vision)
@@ -274,13 +304,14 @@ After MAP.md exists, generate agent specs in `/atris/agent_team/` from MAP insig
 
 ## Implementation Checklist
 
-- [ ] **Phase 1:** Generate MAP.md on fresh system (5 min)
-- [ ] **Phase 2:** Spawn 3 agent specs in agent_team/ (2 min)
-- [ ] **Phase 3:** Auto-generate TASK_CONTEXTS.md from MAP insights (2 min)
-- [ ] **Phase 4:** Test system (ask navigator a question, watch it cite MAP:line) (1 min)
-- [ ] **Ongoing:** Each MAP update triggers TASK_CONTEXTS refresh
+- [ ] **Install:** `npm install -g atris` (instant)
+- [ ] **Init:** `atris init` - creates atris/ with templates (instant)
+- [ ] **Phase 1:** AI agent generates MAP.md from codebase (5 min)
+- [ ] **Phase 3:** AI agent generates TASK_CONTEXTS.md from MAP (2 min)
+- [ ] **Validate:** Test navigator/executor/validator workflows (1 min)
+- [ ] **Ongoing:** Run `atris sync` to get template updates
 
-**Total time to full instrumentation: ~10 minutes**
+**Total time to full instrumentation: ~8 minutes**
 
 ---
 
@@ -306,10 +337,10 @@ atris sync
 
 ---
 
-**Status:** Spec finalized. When deployed to a fresh project, agents will:
-1. Map the codebase in <10 minutes
-2. Answer questions with file:line precision
-3. Execute tasks with full context
-4. Maintain docs as code evolves
+**Status:** Production ready. Run `atris init` in any project to get:
+1. Pre-built agent templates (navigator, executor, validator)
+2. AI generates MAP.md from your codebase in <5 minutes
+3. AI generates TASK_CONTEXTS.md with exact file:line context
+4. Full workflow: activate → plan → build → validate
 
-*Drop atris.md anywhere. Agents follow the blueprint. Codebase becomes fully instrumented for AI collaboration.*
+*Install once. Init anywhere. AI agents have instant context. Codebase becomes fully instrumented for AI collaboration.*

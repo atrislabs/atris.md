@@ -54,6 +54,26 @@ atris activate
 
 This shows today's journal, MAP.md, and TASK_CONTEXTS.md so you can browse and take notes offline. Authentication and agent selection are only required when you want to use `atris chat` with Atris cloud agents.
 
+## Try the autopilot loop (optional)
+
+Need a guided work session? Run:
+
+```bash
+atris autopilot
+```
+
+You'll pick a vision (from today's Inbox or a fresh idea), define success criteria, and then step through plan → do → review cycles. The CLI logs each iteration, and you can type `exit` at any prompt to stop.
+
+## Launch a brainstorm (optional)
+
+Need help shaping an idea before it becomes a task? Run:
+
+```bash
+atris brainstorm
+```
+
+Answer a couple quick questions, get a ready-to-send Claude Code conversation starter (context + ASCII cue), and choose whether to log the session summary and next steps.
+
 ## What Each File Does
 
 ### MAP.md
