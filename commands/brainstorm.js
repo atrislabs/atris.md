@@ -196,67 +196,34 @@ async function brainstormAtris() {
 
     const constraints = await ask('Constraints or guardrails? (optional): ', { allowEmpty: true });
 
-    // Build concise, spaced-out prompt (4-5 sentences max, lots of spacing)
-    const promptLines = [];
-    
-    // Extract key snippets from journal if available (very brief)
-    let journalHint = '';
-    if (journalContext && journalContext.trim()) {
-      const maxHint = 200;
-      const lines = journalContext.split('\n').slice(0, 5).join(' ').trim();
-      if (lines.length > maxHint) {
-        journalHint = lines.substring(0, maxHint) + '...';
-      } else {
-        journalHint = lines;
-      }
-    }
-
-    promptLines.push('You:');
-    promptLines.push('');
-    promptLines.push(`I want to brainstorm: ${topicSummary}`);
-    promptLines.push('');
-    
-    if (userStory) {
-      promptLines.push(`The outcome should be: ${userStory}`);
-      promptLines.push('');
-    }
-    
-    if (feelingsVibe) {
-      promptLines.push(`Vibe we\'re going for: ${feelingsVibe}`);
-      promptLines.push('');
-    }
-    
-    if (journalHint) {
-      promptLines.push(`Recent context: ${journalHint}`);
-      promptLines.push('');
-    }
-    
-    if (constraints) {
-      promptLines.push(`Constraints: ${constraints}`);
-      promptLines.push('');
-    }
-    
-    promptLines.push('Help me uncover what we need to build. Keep responses short (4-5 sentences), pause for alignment, sketch ASCII when structure helps.');
-    promptLines.push('');
-    promptLines.push('Claude:');
-
-    const promptText = promptLines.join('\n');
+    // Build the brainstorm message (structured for AI to read)
+    const brainstormMessage = [
+      `I want to brainstorm: ${topicSummary}`,
+      '',
+      userStory ? `The outcome should be: ${userStory}` : '',
+      feelingsVibe ? `Vibe we're going for: ${feelingsVibe}` : '',
+      journalContext ? `Recent context from journal:\n${journalContext.substring(0, 500)}${journalContext.length > 500 ? '...' : ''}` : '',
+      constraints ? `Constraints: ${constraints}` : '',
+      '',
+      'Help me uncover what we need to build. Keep responses short (4-5 sentences), pause for alignment, sketch ASCII when structure helps.',
+    ].filter(line => line !== '').join('\n');
 
     console.log('');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📋 PROMPT FOR YOUR CODING EDITOR (Claude Code / Cursor / etc):');
+    console.log('🧠 BRAINSTORM SESSION READY');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log('');
-    console.log('Copy this prompt into your coding agent to start brainstorming:');
+    console.log('📝 Instructions for your coding agent:');
     console.log('');
-    console.log('```');
-    console.log(promptText);
-    console.log('```');
+    console.log(brainstormMessage);
     console.log('');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+    console.log('💡 Your coding agent should read the above and start brainstorming with you.');
+    console.log('   Keep it conversational, short responses, ASCII diagrams when helpful.');
     console.log('');
 
-    const logChoice = await askYesNo('Log this brainstorm session to today\'s journal? (y/n): ');
+    const logChoice = await askYesNo('Log this brainstorm setup to today\'s journal? (y/n): ');
     if (logChoice) {
       const sessionSummary = await ask('Session summary (1-2 sentences): ');
       const nextStepsRaw = await ask('Next steps (optional, separate with ";"): ', { allowEmpty: true });
@@ -292,17 +259,12 @@ async function brainstormAtris() {
       console.log('   Then run "atris analytics" to see your stats grow! 📈');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } else {
-      console.log('Skipped journaling. Prompt is ready for your agent.');
-      console.log('💡 Log sessions to track progress → run "atris analytics" to see your stats!');
+      console.log('Skipped journaling.');
     }
 
     console.log('');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('✨ Brainstorm complete!');
-    console.log('');
-    console.log('📋 Next step: Run "atris plan" to break this into actionable tasks.');
-    console.log('');
-    console.log('Full cycle: brainstorm → plan → do → review → launch');
+    console.log('✨ Setup complete! Your coding agent should start brainstorming now.');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   } finally {
     rl.close();
