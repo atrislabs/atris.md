@@ -24,13 +24,27 @@ async function brainstormAtris() {
     createLogFile(logFile, dateFormatted);
   }
 
+  // Show current stats for game-like feel
+  let todayStats = { completions: 0, inbox: 0 };
+  if (fs.existsSync(logFile)) {
+    const logContent = fs.readFileSync(logFile, 'utf8');
+    const completionMatches = logContent.match(/- \*\*C\d+:/g);
+    todayStats.completions = completionMatches ? completionMatches.length : 0;
+    const inboxMatch = logContent.match(/## Inbox\n([\s\S]*?)(?=\n##|---)/);
+    if (inboxMatch && inboxMatch[1].trim()) {
+      const inboxMatches = inboxMatch[1].match(/- \*\*I\d+:/g);
+      todayStats.inbox = inboxMatches ? inboxMatches.length : 0;
+    }
+  }
+
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────────┐');
   console.log('│ ATRIS Brainstorm — structured prompt generator              │');
   console.log('└─────────────────────────────────────────────────────────────┘');
   console.log('');
-  console.log(`Date: ${dateFormatted}`);
-  console.log('Type "exit" at any prompt to cancel.');
+  console.log(`📅 Date: ${dateFormatted}`);
+  console.log(`📊 Today: ${todayStats.completions} completions | ${todayStats.inbox} inbox items`);
+  console.log('💡 Type "exit" at any prompt to cancel.');
   console.log('');
 
   // Try to fetch latest journal entry from backend (optional)
@@ -271,12 +285,18 @@ async function brainstormAtris() {
           console.log(`✓ Archived I${selectedInboxItem.id} from Inbox.`);
         }
       }
-      console.log('✓ Brainstorm session logged.');
+      console.log('✓ Brainstorm session logged to journal.');
+      console.log('');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('💡 TIP: Run "atris log sync" to push to backend');
+      console.log('   Then run "atris analytics" to see your stats grow! 📈');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     } else {
       console.log('Skipped journaling. Prompt is ready for your agent.');
+      console.log('💡 Log sessions to track progress → run "atris analytics" to see your stats!');
     }
 
-    console.log('\nBrainstorm complete.');
+    console.log('\n✨ Brainstorm complete. Ready to build!');
   } finally {
     rl.close();
   }

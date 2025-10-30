@@ -44,7 +44,7 @@ async function logSyncAtris() {
     throw new Error('No agent selected. Run "atris agent" first.');
   }
 
-  const ensured = await ensureValidCredentials();
+  const ensured = await ensureValidCredentials(apiRequestJson);
   if (ensured.error) {
     if (ensured.error === 'not_logged_in') {
       throw new Error('Not logged in. Run "atris login" first.');

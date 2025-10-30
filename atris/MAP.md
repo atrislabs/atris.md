@@ -28,6 +28,28 @@ rg "bin" package.json                     # CLI entry point
 
 ## By-Feature Map
 
+### Feature: Brainstorm (`atris brainstorm`)
+**Purpose:** Generate structured prompts with analytics integration and game-like incentives
+
+- **Entry point:** `commands/brainstorm.js:15-304` (brainstormAtris function)
+- **Key features:**
+  - Shows today's stats (completions, inbox items) at start
+  - Fetches journal context from backend
+  - Generates story-first prompts (user outcome, vibes, constraints)
+  - Encourages logging → sync → analytics loop
+- **Files:** `commands/brainstorm.js`, uses `lib/file-ops.js` for journal operations
+
+### Feature: Log Sync (`atris log sync`)
+**Purpose:** Bidirectional sync between local journal and backend
+
+- **Entry point:** `commands/log-sync.js:11-261` (logSyncAtris function)
+- **Key features:**
+  - Merges local and remote changes intelligently
+  - Handles conflicts with user prompts
+  - Syncs to selected agent's journal in backend
+- **Dependencies:** Requires `apiRequestJson` passed to `ensureValidCredentials`
+- **Files:** `commands/log-sync.js`, uses `utils/auth.js`, `utils/api.js`
+
 ### Feature: CLI Initialization (`atris init`)
 **Purpose:** Creates atris/ folder structure with placeholders in user projects
 
