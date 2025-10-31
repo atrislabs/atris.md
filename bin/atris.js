@@ -101,7 +101,8 @@ function showHelp() {
   console.log('  review     - Activate validator (verify, test, clean docs)');
   console.log('  launch     - Activate launcher (document, capture learnings, publish, celebrate)');
   console.log('  chat       - Interactive chat with ATRIS agents');
-  console.log('  brainstorm - Generate structured brainstorm prompt for agents');
+  console.log('  brainstorm - Generate structured brainstorm prompt for agents (or execute via API in agent mode)');
+  console.log('  mode      - Set execution mode: agent (API) or prompt (text output)');
   console.log('  autopilot  - Guided plan → do → review loop with success criteria');
   console.log('  visualize  - Break down ideas from inbox with 3-4 sentences + ASCII diagram');
   console.log('  log        - View or append to today\'s log');
@@ -163,12 +164,24 @@ if (command === 'init') {
   logoutCmd();
 } else if (command === 'whoami') {
   whoamiCmd();
+} else if (command === 'mode') {
+  modeAtris();
 } else if (command === 'visualize') {
   visualizeAtris();
 } else if (command === 'plan') {
-  planAtris();
+  planAtris()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(`✗ Plan failed: ${error.message || error}`);
+      process.exit(1);
+    });
 } else if (command === 'do') {
-  doAtris();
+  doAtris()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(`✗ Do failed: ${error.message || error}`);
+      process.exit(1);
+    });
 } else if (command === 'console') {
   consoleAtris()
     .then(() => process.exit(0))
@@ -177,7 +190,12 @@ if (command === 'init') {
       process.exit(1);
     });
 } else if (command === 'review') {
-  reviewAtris();
+  reviewAtris()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(`✗ Review failed: ${error.message || error}`);
+      process.exit(1);
+    });
 } else if (command === 'launch') {
   launchAtris();
 } else if (command === 'autopilot') {
@@ -3177,7 +3195,16 @@ function recordBrainstormSession(
   fs.writeFileSync(logFile, content);
 }
 
-function planAtris() {
+async function planAtris() {
+  const { loadConfig } = require('../utils/config');
+  const { loadCredentials } = require('../utils/auth');
+  const { executeCodeExecution } = require('../utils/claude_sdk');
+  const args = process.argv.slice(3);
+  const executeFlag = args.includes('--execute');
+  
+  const config = loadConfig();
+  const executionMode = executeFlag ? 'agent' : (config.execution_mode || 'prompt');
+  
   const targetDir = path.join(process.cwd(), 'atris');
   const navigatorFile = path.join(targetDir, 'agent_team', 'navigator.md');
 
@@ -3270,9 +3297,134 @@ function planAtris() {
   console.log('💡 After planning: Run "atris do" to execute tasks');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
+  
+  // Check execution mode
+  if (executionMode === 'agent') {
+    // Agent mode: execute via backend API
+    if (!config.agent_id) {
+      throw new Error('No agent selected. Run "atris agent" first.');
+    }
+    const credentials = loadCredentials();
+    if (!credentials || !credentials.token) {
+      throw new Error('Not logged in. Run "atris login" first.');
+    }
+
+    // Build system prompt
+    let systemPrompt = '';
+    if (navigatorSpec) {
+      systemPrompt += navigatorSpec + '\n\n';
+    }
+    
+    // Reference MAP.md and PERSONA.md
+    const personaFile = path.join(targetDir, 'PERSONA.md');
+    if (fs.existsSync(personaFile)) {
+      systemPrompt += '## PERSONA.md\n' + fs.readFileSync(personaFile, 'utf8') + '\n\n';
+    }
+    
+    const mapFile = path.join(targetDir, 'MAP.md');
+    const mapPath = fs.existsSync(mapFile) ? path.relative(process.cwd(), mapFile) : null;
+    if (mapPath) {
+      systemPrompt += `## MAP.md\nRead this file for file:line references: ${mapPath}\n\n`;
+    }
+
+    // Build user prompt with context
+    let userPrompt = `You are the Navigator. Take ideas from Inbox → break them down into perfect, manageable tasks.\n\n`;
+    userPrompt += `⚠️ CRITICAL: You MUST create visualizations BEFORE writing tasks!\n\n`;
+    
+    if (inboxContext) {
+      userPrompt += `## INBOX CONTEXT:\n${inboxContext}\n\n`;
+    } else {
+      userPrompt += `## INBOX CONTEXT:\n(No items in Inbox - check logs/YYYY/YYYY-MM-DD.md for inbox items)\n\n`;
+    }
+    
+    if (taskContexts) {
+      userPrompt += `## CURRENT TASK_CONTEXTS.md:\n${taskContexts}\n\n`;
+    }
+    
+    userPrompt += `Your job (execute these steps):\n\n`;
+    userPrompt += `STEP 1: Generate ASCII visualizations for user approval\n`;
+    userPrompt += `   Create diagrams showing architecture, flows, schemas, UI/UX.\n`;
+    userPrompt += `   SHOW these diagrams and wait for approval before proceeding.\n\n`;
+    userPrompt += `STEP 2: Break approved ideas into concrete tasks\n`;
+    userPrompt += `   - Each task should be: Specific, Measurable, Actionable\n`;
+    userPrompt += `   - Include file:line references from MAP.md\n`;
+    userPrompt += `   - List dependencies between tasks\n`;
+    userPrompt += `   - Add acceptance criteria for each task\n\n`;
+    userPrompt += `STEP 3: Write tasks to TASK_CONTEXTS.md\n`;
+    userPrompt += `   - Add tasks to Backlog section\n`;
+    userPrompt += `   - Format: Task number, description, file refs, acceptance criteria\n`;
+    userPrompt += `   - Quality over speed - tasks must be perfect for systems player execution\n\n`;
+    userPrompt += `Start planning now. Read MAP.md for file references.`;
+
+    console.log('');
+    console.log('🤖 AGENT MODE: Executing via backend API...');
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+
+    // Execute via API
+    try {
+      await executeCodeExecution({
+        prompt: userPrompt,
+        allowedTools: ['Read', 'Write', 'Edit'], // Navigator needs to write TASK_CONTEXTS.md
+        permissionMode: 'default',
+        maxTurns: 15,
+        systemPrompt,
+        workingDirectory: process.cwd(),
+        agentId: config.agent_id,
+        token: credentials.token,
+        onMessage: (data) => {
+          if (data.type === 'text' && data.content) {
+            process.stdout.write(data.content);
+          } else if (data.type === 'tool_use') {
+            console.log(`\n🛠️  [${data.tool || data.tool_name}] ${JSON.stringify(data.input || data.tool_input || {}).substring(0, 100)}`);
+          } else if (data.type === 'tool_result') {
+            const result = data.result || data.content || '';
+            const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+            const preview = resultStr.substring(0, 200);
+            console.log(`\n✅ [Result] ${preview}${resultStr.length > 200 ? '...' : ''}`);
+          } else if (data.type === 'error') {
+            console.error(`\n❌ Error: ${data.error}`);
+          } else if (data.type === 'result') {
+            if (data.result) {
+              console.log(`\n🎯 [Final] ${data.result}`);
+            }
+            if (data.duration_ms) {
+              console.log(`⏱️  Duration: ${(data.duration_ms / 1000).toFixed(2)}s`);
+            }
+            if (data.cost_usd) {
+              console.log(`💰 Cost: $${data.cost_usd.toFixed(4)}`);
+            }
+          }
+        },
+        onError: (error) => {
+          console.error(`\n❌ Execution error: ${error.message}`);
+        },
+      });
+      
+      console.log('\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('');
+      console.log('💡 After planning: Run "atris do" to execute tasks');
+      console.log('');
+    } catch (error) {
+      console.error(`\n✗ Agent execution failed: ${error.message}`);
+      throw error;
+    }
+  }
+  // Prompt mode continues with existing output (already logged above)
 }
 
-function doAtris() {
+async function doAtris() {
+  const { loadConfig } = require('../utils/config');
+  const { loadCredentials } = require('../utils/auth');
+  const { executeCodeExecution } = require('../utils/claude_sdk');
+  const args = process.argv.slice(3);
+  const executeFlag = args.includes('--execute');
+  
+  const config = loadConfig();
+  const executionMode = executeFlag ? 'agent' : (config.execution_mode || 'prompt');
+  
   const cwd = process.cwd();
   const targetDir = path.join(cwd, 'atris');
   const executorFile = path.join(targetDir, 'agent_team', 'executor.md');
@@ -3440,6 +3592,113 @@ function doAtris() {
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
+  
+  // Check execution mode
+  if (executionMode === 'agent') {
+    // Agent mode: execute via backend API
+    if (!config.agent_id) {
+      throw new Error('No agent selected. Run "atris agent" first.');
+    }
+    const credentials = loadCredentials();
+    if (!credentials || !credentials.token) {
+      throw new Error('Not logged in. Run "atris login" first.');
+    }
+
+    // Build system prompt
+    let systemPrompt = '';
+    if (executorSpec) {
+      systemPrompt += executorSpec + '\n\n';
+    }
+    if (persona) {
+      systemPrompt += '## PERSONA.md\n' + persona + '\n\n';
+    }
+    if (mapPath) {
+      systemPrompt += `## MAP.md\nRead this file for file:line references: ${mapPath}\n\n`;
+    }
+    if (profile) {
+      systemPrompt += `## PROJECT CONTEXT\nType: ${context}\nProfile: ${JSON.stringify(profile, null, 2)}\n\n`;
+    }
+
+    // Build user prompt with context
+    let userPrompt = `⚠️ CRITICAL: Execute tasks NOW. Use file tools to edit code, terminal to run commands.\n\n`;
+    userPrompt += `You are the Executor. Get it done, precisely, following instructions perfectly.\n\n`;
+    
+    if (filteredTasks) {
+      userPrompt += `## TASKS TO EXECUTE (from ${taskSource}):\n${filteredTasks}\n\n`;
+    } else {
+      userPrompt += `## TASKS TO EXECUTE:\n(No tasks found - check TASK_CONTEXTS.md)\n\n`;
+    }
+    
+    if (taskContexts) {
+      userPrompt += `## TASK_CONTEXTS.md (Additional Context):\n${taskContexts}\n\n`;
+    }
+    
+    userPrompt += `Your process (EXECUTE these steps):\n`;
+    userPrompt += `1. Read tasks from TASK_CONTEXTS.md (shown above)\n`;
+    userPrompt += `2. For each task: Show ASCII visualization first (especially complex changes)\n`;
+    userPrompt += `3. Execute task: Use file edit tools, terminal commands, etc.\n`;
+    userPrompt += `4. After completion: Move task to TASK_CONTEXTS.md <completed> section\n`;
+    userPrompt += `5. Follow PERSONA.md for communication style\n`;
+    userPrompt += `6. Use MAP.md to navigate codebase\n\n`;
+    userPrompt += `DO NOT just describe what you would do - actually edit files and execute commands!\n`;
+    userPrompt += `Context: ${context}\n`;
+    userPrompt += `Start executing tasks now.`;
+
+    console.log('');
+    console.log('🤖 AGENT MODE: Executing via backend API...');
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+
+    // Execute via API
+    try {
+      await executeCodeExecution({
+        prompt: userPrompt,
+        allowedTools: ['Read', 'Write', 'Edit', 'Bash'], // Executor needs all tools
+        permissionMode: 'default',
+        maxTurns: 20,
+        systemPrompt,
+        workingDirectory: process.cwd(),
+        agentId: config.agent_id,
+        token: credentials.token,
+        onMessage: (data) => {
+          if (data.type === 'text' && data.content) {
+            process.stdout.write(data.content);
+          } else if (data.type === 'tool_use') {
+            console.log(`\n🛠️  [${data.tool || data.tool_name}] ${JSON.stringify(data.input || data.tool_input || {}).substring(0, 100)}`);
+          } else if (data.type === 'tool_result') {
+            const result = data.result || data.content || '';
+            const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+            const preview = resultStr.substring(0, 200);
+            console.log(`\n✅ [Result] ${preview}${resultStr.length > 200 ? '...' : ''}`);
+          } else if (data.type === 'error') {
+            console.error(`\n❌ Error: ${data.error}`);
+          } else if (data.type === 'result') {
+            if (data.result) {
+              console.log(`\n🎯 [Final] ${data.result}`);
+            }
+            if (data.duration_ms) {
+              console.log(`⏱️  Duration: ${(data.duration_ms / 1000).toFixed(2)}s`);
+            }
+            if (data.cost_usd) {
+              console.log(`💰 Cost: $${data.cost_usd.toFixed(4)}`);
+            }
+          }
+        },
+        onError: (error) => {
+          console.error(`\n❌ Execution error: ${error.message}`);
+        },
+      });
+      
+      console.log('\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('');
+    } catch (error) {
+      console.error(`\n✗ Agent execution failed: ${error.message}`);
+      throw error;
+    }
+  }
+  // Prompt mode continues with existing output (already logged above)
 }
 
 async function consoleAtris() {
@@ -3592,7 +3851,16 @@ Follow the executor spec. Show ASCII diagrams for complex changes. Ask for confi
   });
 }
 
-function reviewAtris() {
+async function reviewAtris() {
+  const { loadConfig } = require('../utils/config');
+  const { loadCredentials } = require('../utils/auth');
+  const { executeCodeExecution } = require('../utils/claude_sdk');
+  const args = process.argv.slice(3);
+  const executeFlag = args.includes('--execute');
+  
+  const config = loadConfig();
+  const executionMode = executeFlag ? 'agent' : (config.execution_mode || 'prompt');
+  
   const targetDir = path.join(process.cwd(), 'atris');
   const validatorFile = path.join(targetDir, 'agent_team', 'validator.md');
 
@@ -3693,6 +3961,114 @@ function reviewAtris() {
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
+  
+  // Check execution mode
+  if (executionMode === 'agent') {
+    // Agent mode: execute via backend API
+    if (!config.agent_id) {
+      throw new Error('No agent selected. Run "atris agent" first.');
+    }
+    const credentials = loadCredentials();
+    if (!credentials || !credentials.token) {
+      throw new Error('Not logged in. Run "atris login" first.');
+    }
+
+    // Build system prompt
+    let systemPrompt = '';
+    if (validatorSpec) {
+      systemPrompt += validatorSpec + '\n\n';
+    }
+    if (testingGuide) {
+      systemPrompt += '## TESTING GUIDE\n' + testingGuide + '\n\n';
+    }
+    
+    const personaFile = path.join(targetDir, 'PERSONA.md');
+    if (fs.existsSync(personaFile)) {
+      systemPrompt += '## PERSONA.md\n' + fs.readFileSync(personaFile, 'utf8') + '\n\n';
+    }
+    
+    if (mapPath) {
+      systemPrompt += `## MAP.md\nRead this file for file:line references: ${mapPath}\n\n`;
+    }
+
+    // Build user prompt with context
+    let userPrompt = `You are the Validator. Auto-activated after "atris do" completes.\n\n`;
+    userPrompt += `Validation Loop:\n`;
+    userPrompt += `  1. Ultrathink (say "ultrathink", think 3 times)\n`;
+    userPrompt += `  2. Check requirements → build → edge cases → errors → integration\n`;
+    userPrompt += `  3. Run tests (unit, integration, linting, type checking)\n`;
+    userPrompt += `  4. If issues found: report → "atris do" fixes → "atris review" again\n`;
+    userPrompt += `  5. Repeat until: "✅ All good. Ready for human testing."\n\n`;
+    
+    if (taskContexts) {
+      userPrompt += `## TASK_CONTEXTS.md:\n${taskContexts}\n\n`;
+    }
+    
+    userPrompt += `Your job:\n`;
+    userPrompt += `  • Verify everything works\n`;
+    userPrompt += `  • Test thoroughly (unless user says no)\n`;
+    userPrompt += `  • Update docs if needed (MAP.md, TASK_CONTEXTS.md)\n`;
+    userPrompt += `  • Clean TASK_CONTEXTS.md (move completed tasks to Completed section, then delete)\n`;
+    userPrompt += `  • Extract learnings for journal\n`;
+    userPrompt += `  • Only approve when truly ready for human testing\n\n`;
+    userPrompt += `The cycle: do → review → [issues] → do → review → ✅ Ready\n`;
+    userPrompt += `Start validating now. Read files, run tests, verify implementation.`;
+
+    console.log('');
+    console.log('🤖 AGENT MODE: Executing via backend API...');
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+
+    // Execute via API
+    try {
+      await executeCodeExecution({
+        prompt: userPrompt,
+        allowedTools: ['Read', 'Write', 'Edit', 'Bash'], // Validator needs to read, test, update docs
+        permissionMode: 'default',
+        maxTurns: 15,
+        systemPrompt,
+        workingDirectory: process.cwd(),
+        agentId: config.agent_id,
+        token: credentials.token,
+        onMessage: (data) => {
+          if (data.type === 'text' && data.content) {
+            process.stdout.write(data.content);
+          } else if (data.type === 'tool_use') {
+            console.log(`\n🛠️  [${data.tool || data.tool_name}] ${JSON.stringify(data.input || data.tool_input || {}).substring(0, 100)}`);
+          } else if (data.type === 'tool_result') {
+            const result = data.result || data.content || '';
+            const resultStr = typeof result === 'string' ? result : JSON.stringify(result);
+            const preview = resultStr.substring(0, 200);
+            console.log(`\n✅ [Result] ${preview}${resultStr.length > 200 ? '...' : ''}`);
+          } else if (data.type === 'error') {
+            console.error(`\n❌ Error: ${data.error}`);
+          } else if (data.type === 'result') {
+            if (data.result) {
+              console.log(`\n🎯 [Final] ${data.result}`);
+            }
+            if (data.duration_ms) {
+              console.log(`⏱️  Duration: ${(data.duration_ms / 1000).toFixed(2)}s`);
+            }
+            if (data.cost_usd) {
+              console.log(`💰 Cost: $${data.cost_usd.toFixed(4)}`);
+            }
+          }
+        },
+        onError: (error) => {
+          console.error(`\n❌ Execution error: ${error.message}`);
+        },
+      });
+      
+      console.log('\n');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('');
+    } catch (error) {
+      console.error(`\n✗ Agent execution failed: ${error.message}`);
+      throw error;
+    }
+  }
+  // Prompt mode continues with existing output (already logged above)
 }
 
 function launchAtris() {
@@ -4225,4 +4601,35 @@ function analyticsAtris() {
   console.log('─────────────────────────────────────────────────────────────');
   console.log('💡 Insight: This data syncs to backend via "atris log sync"');
   console.log('');
+}
+
+function modeAtris() {
+  const subcommand = process.argv[3];
+  const { loadConfig, saveConfig } = require('../utils/config');
+  
+  if (!subcommand || !['agent', 'prompt'].includes(subcommand)) {
+    console.log('Usage: atris mode <agent|prompt>');
+    console.log('');
+    console.log('  agent   - Execute commands via backend API (standalone agent mode)');
+    console.log('  prompt  - Output prompts for external AI (framework mode, default)');
+    console.log('');
+    const config = loadConfig();
+    const currentMode = config.execution_mode || 'prompt';
+    console.log(`Current mode: ${currentMode}`);
+    process.exit(0);
+  }
+
+  const config = loadConfig();
+  config.execution_mode = subcommand;
+  saveConfig(config);
+  
+  console.log(`✓ Execution mode set to: ${subcommand}`);
+  console.log('');
+  if (subcommand === 'agent') {
+    console.log('Commands will now execute via backend API.');
+    console.log('Make sure you are logged in: atris login');
+    console.log('And have an agent selected: atris agent');
+  } else {
+    console.log('Commands will now output prompts for external AI.');
+  }
 }
