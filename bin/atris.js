@@ -4494,7 +4494,10 @@ function analyticsAtris() {
 
   dates.forEach((date, index) => {
     const year = date.getFullYear();
-    const dateFormatted = date.toISOString().split('T')[0];
+    // Use local timezone, not UTC (fixes timezone bug)
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateFormatted = `${year}-${month}-${day}`;
     const logPath = path.join(targetDir, 'logs', year.toString(), `${dateFormatted}.md`);
 
     if (!fs.existsSync(logPath)) {
@@ -4561,7 +4564,11 @@ function analyticsAtris() {
     'No data';
 
   // Display analytics
-  const dateFormatted = today.toISOString().split('T')[0];
+  // Use local timezone, not UTC (fixes timezone bug)
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  const dateFormatted = `${year}-${month}-${day}`;
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────────┐');
   console.log(`│ ATRIS Analytics — ${dateFormatted}${' '.repeat(33 - dateFormatted.length)}│`);
