@@ -69,6 +69,9 @@ async function logSyncAtris() {
   let remoteUpdatedAt = null;
   let remoteContent = null;
   let remoteHash = null;
+  let shouldPush = true; // Flag to track if we should push local changes
+  let finalLocalContent = localContent; // Track what final local content should be
+
   const existing = await apiRequestJson(`/agents/${agentId}/journal/${dateFormatted}`, {
     method: 'GET',
     token: credentials.token,
@@ -89,10 +92,16 @@ async function logSyncAtris() {
       const remoteMatchesKnown = (knownRemoteUpdate && isSameTimestamp(remoteUpdatedAt, knownRemoteUpdate))
         || (remoteHash && knownRemoteHash && remoteHash === knownRemoteHash);
 
+      // Check if local has changes since last sync
+      const localMatchesKnown = (knownRemoteHash && localHash === knownRemoteHash);
+
       if (remoteTime > localTime && !remoteMatchesKnown) {
+        // Web is newer - need to pull/merge
         const normalizedRemote = remoteContent ? remoteContent.replace(/\r\n/g, '\n') : null;
         const normalizedLocal = localContent.replace(/\r\n/g, '\n');
+        
         if (normalizedRemote !== null && normalizedRemote.trim() === normalizedLocal.trim()) {
+          // Content identical, just update timestamp
           const remoteDate = new Date(remoteUpdatedAt);
           if (!Number.isNaN(remoteDate.getTime())) {
             fs.utimesSync(logFile, remoteDate, remoteDate);
@@ -113,29 +122,55 @@ async function logSyncAtris() {
           const { merged, conflicts } = mergeSections(localSections, remoteSections, knownRemoteHash);
 
           if (conflicts.length === 0) {
+            // Clean merge - auto-merge and continue
             const mergedContent = reconstructJournal(merged);
             fs.writeFileSync(logFile, mergedContent, 'utf8');
             console.log('✓ Auto-merged web and local changes');
             console.log(`   Merged sections: ${Object.keys(merged).filter(k => k !== '__header__').join(', ')}`);
-            localContent = mergedContent;
+            finalLocalContent = mergedContent;
+            
+            // Update timestamp to match web
+            const remoteDate = new Date(remoteUpdatedAt);
+            if (!Number.isNaN(remoteDate.getTime())) {
+              fs.utimesSync(logFile, remoteDate, remoteDate);
+            }
+            
+            // If local didn't have changes, don't push (web already has latest)
+            if (localMatchesKnown) {
+              console.log('✓ Sync complete (web had updates, local was unchanged)');
+              const state = loadLogSyncState();
+              state[dateFormatted] = {
+                updated_at: remoteUpdatedAt,
+                hash: computeContentHash(mergedContent),
+              };
+              saveLogSyncState(state);
+              return;
+            }
           } else {
+            // Conflicts detected - prompt user
             console.log('⚠️  Conflicting changes in same section(s)');
             console.log(`   Conflicts: ${conflicts.join(', ')}`);
             console.log(`   Remote updated: ${remoteUpdatedAt}`);
             console.log(`   Local modified: ${localModified}`);
-            console.log('   Type "y" to replace local with web version, or "n" to keep local changes.');
+            console.log('');
+            console.log('   Options:');
+            console.log('   1. Use web version (overwrite local)');
+            console.log('   2. Keep local version (overwrite web)');
+            console.log('   3. Merge (combine both - may need manual cleanup)');
             console.log('');
 
             if (typeof remoteContent === 'string') {
               showLogDiff(logFile, remoteContent);
             }
 
-            const answer = await promptUser('Overwrite local with web version? (y/n): ');
+            const answer = await promptUser('Choose option (1/2/3): ');
 
-            if (answer && answer.toLowerCase() === 'y') {
+            if (answer === '1') {
+              // Use web version
               const pulledContent = existing.data?.content || '';
               fs.writeFileSync(logFile, pulledContent, 'utf8');
               remoteHash = computeContentHash(pulledContent);
+              finalLocalContent = pulledContent;
               console.log('✓ Local journal updated from web');
               console.log(`🗒️  File: ${path.relative(process.cwd(), logFile)}`);
               if (remoteUpdatedAt) {
@@ -150,28 +185,47 @@ async function logSyncAtris() {
                 };
                 saveLogSyncState(state);
               }
-              return;
-            } else {
+              // Don't push - web already has the correct version
+              shouldPush = false;
+            } else if (answer === '2') {
+              // Keep local version - will push to web
               console.log('⏩ Keeping local version, will push to web');
+              finalLocalContent = localContent;
+            } else if (answer === '3') {
+              // Merge both
+              const mergedContent = reconstructJournal(merged);
+              fs.writeFileSync(logFile, mergedContent, 'utf8');
+              finalLocalContent = mergedContent;
+              console.log('✓ Merged both versions (check for duplicates)');
+              console.log(`   Merged sections: ${Object.keys(merged).filter(k => k !== '__header__').join(', ')}`);
+            } else {
+              // Invalid answer - default to keeping local
+              console.log('⏩ Invalid choice, keeping local version');
+              finalLocalContent = localContent;
             }
           }
         } catch (parseError) {
+          // Fallback to simple prompt
           console.log('⚠️  Web version is newer than local version');
           console.log(`   Remote updated: ${remoteUpdatedAt}`);
           console.log(`   Local modified: ${localModified}`);
-          console.log('   Type "y" to replace your local file with the web version, or "n" to keep local changes and push them to the web.');
+          console.log('');
+          console.log('   Options:');
+          console.log('   1. Use web version (overwrite local)');
+          console.log('   2. Keep local version (overwrite web)');
           console.log('');
 
           if (typeof remoteContent === 'string') {
             showLogDiff(logFile, remoteContent);
           }
 
-          const answer = await promptUser('Overwrite local with web version? (y/n): ');
+          const answer = await promptUser('Choose option (1/2): ');
 
-          if (answer && answer.toLowerCase() === 'y') {
+          if (answer === '1') {
             const pulledContent = existing.data?.content || '';
             fs.writeFileSync(logFile, pulledContent, 'utf8');
             remoteHash = computeContentHash(pulledContent);
+            finalLocalContent = pulledContent;
             console.log('✓ Local journal updated from web');
             console.log(`🗒️  File: ${path.relative(process.cwd(), logFile)}`);
             if (remoteUpdatedAt) {
@@ -186,14 +240,24 @@ async function logSyncAtris() {
               };
               saveLogSyncState(state);
             }
-            return;
+            // Don't push - web already has the correct version
+            shouldPush = false;
           } else {
+            // Keep local - will push
             console.log('⏩ Keeping local version, will push to web');
+            finalLocalContent = localContent;
           }
         }
+      } else if (remoteTime < localTime && !localMatchesKnown) {
+        // Local is newer - will push
+        console.log('📤 Local changes detected, will push to web');
+        finalLocalContent = localContent;
       } else if (remoteTime > localTime && remoteMatchesKnown) {
+        // Web timestamp ahead but matches known state (clock skew)
         console.log('⚠️  Web timestamp ahead due to clock skew (matches last sync); pushing local changes.');
-      } else if (remoteTime === localTime) {
+        finalLocalContent = localContent;
+      } else if (remoteTime === localTime || (localMatchesKnown && remoteMatchesKnown)) {
+        // Already synced
         console.log('✓ Already synced (local and web are identical)');
         if (remoteUpdatedAt) {
           const state = loadLogSyncState();
@@ -204,6 +268,27 @@ async function logSyncAtris() {
           saveLogSyncState(state);
         }
         return;
+      } else if (localMatchesKnown && !remoteMatchesKnown) {
+        // Local unchanged, web has updates - just pull
+        console.log('📥 Web has updates, local unchanged - pulling...');
+        const pulledContent = existing.data?.content || '';
+        fs.writeFileSync(logFile, pulledContent, 'utf8');
+        const pulledHash = computeContentHash(pulledContent);
+        if (remoteUpdatedAt) {
+          const remoteDate = new Date(remoteUpdatedAt);
+          if (!Number.isNaN(remoteDate.getTime())) {
+            fs.utimesSync(logFile, remoteDate, remoteDate);
+          }
+          const state = loadLogSyncState();
+          state[dateFormatted] = {
+            updated_at: remoteUpdatedAt,
+            hash: pulledHash,
+          };
+          saveLogSyncState(state);
+        }
+        console.log('✓ Local journal updated from web');
+        console.log(`🗒️  File: ${path.relative(process.cwd(), logFile)}`);
+        return;
       }
     }
   } else if (!existing.status) {
@@ -212,8 +297,18 @@ async function logSyncAtris() {
     throw new Error(existing.error || 'Failed to check existing journal entry');
   }
 
+  // Only push if we should (web wasn't newer and user chose to keep local, or local is newer)
+  if (!shouldPush) {
+    return;
+  }
+
+  // Update local file with final content if it changed
+  if (finalLocalContent !== localContent) {
+    fs.writeFileSync(logFile, finalLocalContent, 'utf8');
+  }
+
   const payload = {
-    content: localContent,
+    content: finalLocalContent,
     metadata: {
       source: 'cli',
       local_path: `logs/${dateFormatted}.md`,
@@ -237,7 +332,7 @@ async function logSyncAtris() {
   const updatedAt = data.updated_at || new Date().toISOString();
 
   if (remoteExists) {
-    console.log(`✓ Updated journal entry (previous update: ${remoteUpdatedAt || 'unknown'})`);
+    console.log(`✓ Updated journal entry on web (previous update: ${remoteUpdatedAt || 'unknown'})`);
   } else {
     console.log('✓ Created journal entry in Atris');
   }
