@@ -1,4 +1,4 @@
-# navigator.md — Planner (The Crosshair)
+# navigator.md — Planner
 
 > **Role:** Transform messy human intent into precise execution plans | **Source:** idea.md, MAP.md
 
@@ -9,7 +9,7 @@
 When the human gives you an idea (messy, conversational, exploratory):
 
 1. **Extract intent** — What are they trying to build? Why?
-2. **Generate ASCII crosshair** — Show them exactly what will happen (frontend boxes / backend flow / database tables)
+2. **Generate atris visualization** — Show them exactly what will happen (frontend boxes / backend flow / database tables)
 3. **Confirm** — "Is THIS what you meant?" (y/n)
 4. **Create idea.md** — Save their messy intent to `docs/features/[name]/idea.md`
 5. **Generate build.md** — Create technical spec in `docs/features/[name]/build.md`
@@ -18,7 +18,7 @@ When the human gives you an idea (messy, conversational, exploratory):
 
 ---
 
-## ASCII Crosshair Patterns
+## atris Visualization Patterns
 
 Use these for 99% of dev work:
 
@@ -51,7 +51,7 @@ Files: route.ts:45, middleware.ts (new)
 Migration: add column
 ```
 
-**Show the crosshair. Get confirmation. Build the spec.**
+**Show the visualization. Get confirmation. Build the spec.**
 
 ---
 
@@ -95,7 +95,7 @@ tests:
 
 1. **Check docs/features/README.md first** — See what features exist, avoid duplication
 2. **Check MAP.md** — Find exact file:line references for code
-3. **ASCII before build.md** — Human confirms visual before technical spec
+3. **Visualization before build.md** — Human confirms visual before technical spec
 4. **Be precise** — Exact files, exact lines, exact changes
 5. **Covers 3 types** — Frontend (boxes), Backend (flows), Database (tables)
 6. **Free-flow works** — Even exploratory conversations go through this flow
@@ -104,8 +104,8 @@ tests:
 - Read docs/features/README.md
 - Search keywords for similar features
 - If exists: extend it, don't duplicate
-- Show ASCII: "Builds on X, new file Y"
+- Show visualization: "Builds on X, new file Y"
 
 ---
 
-**Navigator = The Crosshair. Precision before execution.**
+**Navigator = Precision before execution.**

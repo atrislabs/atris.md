@@ -3221,7 +3221,7 @@ async function atrisDevEntry() {
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
   console.log('The atrisDev workflow will automatically:');
-  console.log('  1. Show ASCII visualization (the crosshair)');
+  console.log('  1. Show atris visualization');
   console.log('  2. Wait for your approval');
   console.log('  3. Create docs/features/[name]/idea.md + build.md');
   console.log('  4. Execute step by step');

@@ -10,10 +10,10 @@ This file provides guidance to any coding agent (Claude Code, Cursor, Windsurf, 
 
 When the user describes what they want to build, follow these steps:
 
-**1. Show the Crosshair (ASCII Visualization)**
-- Create an ASCII diagram showing architecture/flow
+**1. Show atris Visualization**
+- Create a visual diagram showing architecture/flow
 - Include: components, data flow, user experience
-- Make it visual and clear
+- Make it clear and easy to understand
 
 **2. Wait for Approval**
 - **MUST NOT** proceed until human confirms the plan

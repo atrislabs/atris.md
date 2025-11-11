@@ -496,9 +496,9 @@ The agent executes this workflow:
 
 ### atrisDev Workflow Steps
 
-**1. Show the Crosshair (ASCII Visualization)**
+**1. Show atris Visualization**
 
-Before writing any code, the agent creates an ASCII diagram showing:
+Before writing any code, the agent creates a visual diagram showing:
 - Architecture/data flow
 - Key components and their interactions
 - Database schema (if applicable)
