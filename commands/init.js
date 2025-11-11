@@ -320,13 +320,27 @@ function initAtris() {
   console.log('✓ Injected project patterns into agent_team specs');
 
   // Create agent instruction files for different tools
-  const agentInstructions = `When the user asks to build/plan/fix something, run:
+  const agentInstructions = `# atrisDev Protocol
+
+When the user asks to build/plan/fix/check something, FIRST run:
 
 \`\`\`bash
 atris
 \`\`\`
 
-Follow the instructions in the output. The full atrisDev protocol is in atris/atris.md.`;
+Then follow the instructions in the output.
+
+## Workflow
+
+The \`atris\` command will tell you to:
+1. Read atris.md (the full protocol)
+2. Show atris visualization
+3. Wait for approval
+4. Create docs/features/[name]/idea.md + build.md
+5. Execute step by step
+6. Review and update docs
+
+DO NOT explore the codebase manually. Run \`atris\` first, then follow its instructions.`;
 
   // .cursorrules for Cursor
   const cursorRulesFile = path.join(process.cwd(), '.cursorrules');
