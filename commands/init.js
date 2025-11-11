@@ -319,6 +319,37 @@ function initAtris() {
   injectProjectPatterns(agentTeamDir, profile);
   console.log('✓ Injected project patterns into agent_team specs');
 
+  // Create agent instruction files for different tools
+  const agentInstructions = `When the user asks to build/plan/fix something, run:
+
+\`\`\`bash
+atris
+\`\`\`
+
+Follow the instructions in the output. The full atrisDev protocol is in atris/atris.md.`;
+
+  // .cursorrules for Cursor
+  const cursorRulesFile = path.join(process.cwd(), '.cursorrules');
+  if (!fs.existsSync(cursorRulesFile)) {
+    fs.writeFileSync(cursorRulesFile, agentInstructions);
+    console.log('✓ Created .cursorrules (for Cursor)');
+  }
+
+  // AGENTS.md for Codex
+  const agentsMdFile = path.join(process.cwd(), 'AGENTS.md');
+  if (!fs.existsSync(agentsMdFile)) {
+    fs.writeFileSync(agentsMdFile, agentInstructions);
+    console.log('✓ Created AGENTS.md (for Codex)');
+  }
+
+  // CLAUDE.md for Claude Code (copy from atris/)
+  const claudeMdSource = path.join(__dirname, '..', 'atris', 'CLAUDE.md');
+  const claudeMdFile = path.join(targetDir, 'CLAUDE.md');
+  if (!fs.existsSync(claudeMdFile) && fs.existsSync(claudeMdSource)) {
+    fs.copyFileSync(claudeMdSource, claudeMdFile);
+    console.log('✓ Created atris/CLAUDE.md (for Claude Code)');
+  }
+
   if (fs.existsSync(sourceFile)) {
     fs.copyFileSync(sourceFile, targetFile);
     console.log('✓ Copied atris.md to atris/ folder');
