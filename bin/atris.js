@@ -3232,20 +3232,28 @@ async function atrisDevEntry() {
   }
 
   console.log('─────────────────────────────────────────────────────────────');
-  console.log('Next: Describe what you want to build');
+  console.log('📋 Instructions for Coding Agent');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('The atrisDev workflow will automatically:');
-  console.log('  1. Show atris visualization');
-  console.log('  2. Wait for your approval');
-  console.log('  3. Create docs/features/[name]/idea.md + build.md');
-  console.log('  4. Execute step by step');
-  console.log('  5. Review and update docs');
+  console.log('You are in an atrisDev workspace. Follow this protocol:');
   console.log('');
-  console.log('📖 Full protocol: See atris.md Phase 5.2');
-  console.log('🤖 Auto-loaded: atris/CLAUDE.md tells agents to follow atrisDev');
+  console.log('1. Read atris/CLAUDE.md for full workflow details');
   console.log('');
-  console.log('Works with: Claude Code, Cursor, Windsurf, Copilot, any agent');
+  console.log('2. When user describes what they want, follow atrisDev:');
+  console.log('   - Show atris visualization (diagram of the plan)');
+  console.log('   - Wait for user approval');
+  console.log('   - Create docs/features/[name]/idea.md');
+  console.log('   - Create docs/features/[name]/build.md');
+  console.log('   - Execute step by step');
+  console.log('   - Review and update docs/features/README.md');
+  console.log('');
+  console.log('3. Reference atris/MAP.md for file locations');
+  console.log('');
+  console.log('4. Protocol details: atris.md Phase 5.2');
+  console.log('');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  console.log('Human: Describe what you want to build, agent will follow atrisDev.');
   console.log('');
 }
 
