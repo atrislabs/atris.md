@@ -466,6 +466,124 @@ Enhanced sync logic with auto-pull and conflict resolution.
 
 ---
 
+## Phase 5.2: atrisDev Protocol (Universal Workflow)
+
+**The atrisDev Protocol** is a universal workflow that any coding agent can follow to produce high-quality output. When agents follow this protocol, they build features systematically with human approval gates and proper documentation.
+
+**This protocol works with ANY agent:** Claude Code, Cursor, Windsurf, GitHub Copilot, or any LLM-based coding assistant.
+
+---
+
+### How to Use atrisDev
+
+**Step 1: Load Context**
+
+Run `atris` in your terminal. It outputs a prompt containing:
+- Active work in progress
+- Inbox ideas waiting to be built
+- Recent completions
+- The atrisDev workflow steps
+
+**Step 2: Copy the Prompt**
+
+Copy the entire output and paste it to your coding agent along with your task description.
+
+**Step 3: Agent Follows the Protocol**
+
+The agent executes this workflow:
+
+---
+
+### atrisDev Workflow Steps
+
+**1. Show the Crosshair (ASCII Visualization)**
+
+Before writing any code, the agent creates an ASCII diagram showing:
+- Architecture/data flow
+- Key components and their interactions
+- Database schema (if applicable)
+- User experience flow (if applicable)
+
+**Example:**
+```
+┌─────────────┐
+│   Browser   │
+└──────┬──────┘
+       │ POST /api/features
+       ▼
+┌─────────────────┐      ┌──────────────┐
+│  API Handler    │─────▶│  Database    │
+│  - Validate     │      │  - features  │
+│  - Transform    │◀─────│  - users     │
+└─────────────────┘      └──────────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Response JSON  │
+└─────────────────┘
+```
+
+**2. Wait for Approval**
+
+Agent **MUST NOT** proceed until the human confirms the plan is correct.
+
+**3. Create idea.md**
+
+Path: `docs/features/[feature-name]/idea.md`
+
+Contents:
+- **Problem Statement** — What are we solving?
+- **Solution Design** — How will we solve it?
+- **ASCII Diagrams** — Visual representation
+- **Success Criteria** — How do we know it works?
+
+**4. Create build.md**
+
+Path: `docs/features/[feature-name]/build.md`
+
+Contents:
+- **Step-by-step Implementation Plan** — Ordered list of tasks
+- **Files to Change** — Exact file paths and what changes
+- **Testing Strategy** — How to verify each step
+
+**5. Execute Step by Step**
+
+- Build one step at a time
+- After each step, check alignment with the plan
+- If something doesn't match, stop and adjust
+- Never batch multiple steps without validation
+
+**6. Review & Validate**
+
+- Run all tests
+- Verify success criteria from idea.md
+- Update `docs/features/README.md` with new feature entry
+- Add completion to journal: `## Completed ✅`
+
+---
+
+### Why This Works
+
+**Benefits of atrisDev Protocol:**
+- **Approval gates prevent wasted work** — Human confirms plan before execution
+- **Documentation is automatic** — idea.md and build.md created as byproducts
+- **Visual thinking reduces miscommunication** — ASCII diagrams force clarity
+- **Step-by-step execution prevents sprawl** — Each step validated before next
+- **Works with any agent** — Protocol is agent-agnostic
+- **Spreads naturally** — Once installed, `atris` becomes the entry point for all dev work
+
+**Adoption path:**
+1. Dev installs `atris`: `npm install -g atris`
+2. Initializes project: `atris init`
+3. Runs `atris` to get the protocol prompt
+4. Copies prompt to their preferred agent
+5. Agent follows atrisDev workflow → high-quality output
+6. Dev shares results → others adopt atris
+
+**The vision:** Every developer running `atris` gets a structured, high-quality workflow regardless of which coding agent they use. The protocol becomes the standard.
+
+---
+
 ## Phase 6: Future Roadmap (Vision)
 
 **See [`ATRIS_NOTES.md`](./ATRIS_NOTES.md) for full roadmap. Preview:**

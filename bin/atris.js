@@ -115,79 +115,16 @@ function showHelp() {
   console.log('  help       - Show this help message');
 }
 
-// Smart default: if no command, show intelligent state detection
+// Smart default: if no command, load context and enter brainstorm/planning mode
 if (!command) {
-  try {
-    const workspaceDir = process.cwd();
-    const state = detectWorkspaceState(workspaceDir);
-    const context = loadContext(workspaceDir);
-
-    console.log('');
-
-    // Render state-specific message
-    if (state.state === 'fresh') {
-      console.log('🚀 Welcome to ATRIS\n');
-      console.log('Your workspace is ready. Time to get started.\n');
-      console.log('Next steps:');
-      console.log('  1. atris log          Add your first idea');
-      console.log('  2. atris brainstorm   Shape it with AI\n');
-      console.log('Or: atris help          See all commands\n');
-    } else if (state.state === 'in-progress') {
-      console.log('📍 In Progress\n');
-      console.log(`Feature: ${state.feature}`);
-      console.log('Status: In Progress\n');
-      console.log('What next?');
-      console.log(`  → atris do ${state.feature}       Continue building`);
-      console.log('  → atris log             Add thoughts');
-      console.log('  → atris plan            Change direction\n');
-    } else if (state.state === 'inbox') {
-      console.log('📥 You Have Ideas Waiting\n');
-      console.log(`${state.count} item${state.count > 1 ? 's' : ''} in Inbox:`);
-      state.items.forEach((item, i) => {
-        const preview = item.length > 50 ? item.substring(0, 47) + '...' : item;
-        console.log(`  ${i + 1}. ${preview}`);
-      });
-      console.log('\nWhat next?');
-      console.log('  → atris plan            Break one down into tasks');
-      console.log('  → atris do              Jump straight to building\n');
-    } else if (state.state === 'blocked') {
-      console.log('⚠️  You\'re Blocked\n');
-      console.log(`${state.reason}\n`);
-      console.log('Next:');
-      console.log('  → atris log             Document the blocker');
-      console.log('  → atris status          See details\n');
-    } else {
-      // ready state
-      console.log('✓ Ready to Work\n');
-      console.log('What do you want to do?');
-      console.log('  → atris log             Add an idea');
-      console.log('  → atris plan            Pick work from MAP');
-      console.log('  → atris do              Continue recent work\n');
-    }
-
-    // Show context if available
-    if (context.inProgressFeatures.length > 0) {
-      console.log('⚡ Active work:');
-      context.inProgressFeatures.forEach(feature => {
-        console.log(`   • ${feature}`);
-      });
-      console.log('');
-    }
-
-    if (context.hasInbox && context.inboxItems.length > 0) {
-      console.log(`📥 Inbox (${context.inboxItems.length}):`);
-      context.inboxItems.forEach(item => {
-        const preview = item.length > 50 ? item.substring(0, 47) + '...' : item;
-        console.log(`   • ${preview}`);
-      });
-      console.log('');
-    }
-
-  } catch (error) {
-    console.error('Error detecting workspace state:', error.message);
-    showHelp();
-  }
-  process.exit(0);
+  atrisDevEntry()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(`✗ Error: ${error.message || error}`);
+      process.exit(1);
+    });
+  // Early return to prevent further execution
+  return;
 }
 
 if (command === 'help' || command === '--help' || command === '-h') {
@@ -3165,6 +3102,136 @@ function recordBrainstormSession(
   const block = lines.join('\n');
   content = insertIntoNotesSection(content, block);
   fs.writeFileSync(logFile, content);
+}
+
+async function atrisDevEntry() {
+  // Load workspace context and present planning-ready state
+  const targetDir = path.join(process.cwd(), 'atris');
+
+  // Check if ATRIS is initialized
+  if (!fs.existsSync(targetDir)) {
+    console.log('');
+    console.log('🚀 Welcome to ATRIS\n');
+    console.log('Not initialized yet. Let\'s get started:\n');
+    console.log('  → atris init        Set up your workspace');
+    console.log('  → atris help        See all commands\n');
+    return;
+  }
+
+  ensureLogDirectory();
+  const { logFile, dateFormatted } = getLogPath();
+  if (!fs.existsSync(logFile)) {
+    createLogFile(logFile, dateFormatted);
+  }
+
+  // Load context
+  const workspaceDir = process.cwd();
+  const state = detectWorkspaceState(workspaceDir);
+  const context = loadContext(workspaceDir);
+
+  console.log('');
+  console.log('┌─────────────────────────────────────────────────────────────┐');
+  console.log('│ atrisDev — Context Loaded, Ready to Plan                    │');
+  console.log('└─────────────────────────────────────────────────────────────┘');
+  console.log('');
+  console.log(`📅 ${dateFormatted}`);
+  console.log('');
+
+  // Show active work if any
+  if (context.inProgressFeatures.length > 0) {
+    console.log('⚡ Active Work:');
+    context.inProgressFeatures.forEach(feature => {
+      console.log(`   • ${feature}`);
+    });
+    console.log('');
+  }
+
+  // Show inbox items or cold start message
+  if (context.hasInbox && context.inboxItems.length > 0) {
+    console.log(`📥 Inbox (${context.inboxItems.length} idea${context.inboxItems.length > 1 ? 's' : ''}):`);
+    context.inboxItems.slice(0, 5).forEach((item, i) => {
+      const preview = item.length > 60 ? item.substring(0, 57) + '...' : item;
+      console.log(`   ${i + 1}. ${preview}`);
+    });
+    if (context.inboxItems.length > 5) {
+      console.log(`   ... and ${context.inboxItems.length - 5} more`);
+    }
+    console.log('');
+  } else {
+    console.log('💭 Fresh slate — ready to build something new\n');
+  }
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('💬 atrisDev Protocol — Ready to build');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+
+  // Show context only if there's something to show
+  let hasContext = false;
+
+  if (context.inProgressFeatures.length > 0) {
+    hasContext = true;
+    console.log('⚡ Active Work:');
+    context.inProgressFeatures.forEach(feature => {
+      console.log(`   • ${feature}`);
+    });
+    console.log('');
+  }
+
+  if (context.hasInbox && context.inboxItems.length > 0) {
+    hasContext = true;
+    console.log('📥 Inbox Ideas:');
+    context.inboxItems.slice(0, 5).forEach((item, i) => {
+      const preview = item.length > 60 ? item.substring(0, 57) + '...' : item;
+      console.log(`   ${i + 1}. ${preview}`);
+    });
+    if (context.inboxItems.length > 5) {
+      console.log(`   ... and ${context.inboxItems.length - 5} more`);
+    }
+    console.log('');
+  }
+
+  const logContent = fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '';
+  const completedMatch = logContent.match(/## Completed ✅\n([\s\S]*?)(?=\n##|$)/);
+  if (completedMatch && completedMatch[1].trim()) {
+    const completedItems = completedMatch[1].trim().split('\n')
+      .filter(line => line.match(/^- \*\*C\d+:/))
+      .slice(-3);
+    if (completedItems.length > 0) {
+      hasContext = true;
+      console.log('✅ Recent Completions:');
+      completedItems.forEach(item => {
+        const match = item.match(/^- \*\*C\d+:\s*(.+)\*\*/);
+        if (match) {
+          const text = match[1].length > 60 ? match[1].substring(0, 57) + '...' : match[1];
+          console.log(`   • ${text}`);
+        }
+      });
+      console.log('');
+    }
+  }
+
+  if (!hasContext) {
+    console.log('💭 Fresh slate — ready to build something new');
+    console.log('');
+  }
+
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('Next: Describe what you want to build');
+  console.log('─────────────────────────────────────────────────────────────');
+  console.log('');
+  console.log('The atrisDev workflow will automatically:');
+  console.log('  1. Show ASCII visualization (the crosshair)');
+  console.log('  2. Wait for your approval');
+  console.log('  3. Create docs/features/[name]/idea.md + build.md');
+  console.log('  4. Execute step by step');
+  console.log('  5. Review and update docs');
+  console.log('');
+  console.log('📖 Full protocol: See atris.md Phase 5.2');
+  console.log('🤖 Auto-loaded: atris/CLAUDE.md tells agents to follow atrisDev');
+  console.log('');
+  console.log('Works with: Claude Code, Cursor, Windsurf, Copilot, any agent');
+  console.log('');
 }
 
 async function planAtris() {

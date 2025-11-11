@@ -2,24 +2,51 @@
 
 This file provides guidance to any coding agent (Claude Code, Cursor, Windsurf, etc) when working with code in this repository.
 
-## Using ATRIS (If atris/ folder exists)
+## 🎯 atrisDev Protocol Active
 
-**You are in an ATRIS-managed project.**
+**You are in an ATRIS-managed project.** Follow the atrisDev workflow for all feature development.
 
-**FIRST:** Read `atris/PERSONA.md` and adopt that personality.
+### atrisDev Workflow (Do this automatically)
 
-**Then follow this workflow:**
-1. **Before any change:** Read `atris/MAP.md` to find relevant files/components
-2. **When starting a task:** Check `atris/TASK_CONTEXTS.md` for existing tasks or add new one
-3. **After completing task:** Delete task from TASK_CONTEXTS.md
-4. **If architecture changes:** Update `atris/MAP.md` with new structure
-5. **Follow agent workflow:** navigator (find) → executor (build) → validator (verify)
+When the user describes what they want to build, follow these steps:
+
+**1. Show the Crosshair (ASCII Visualization)**
+- Create an ASCII diagram showing architecture/flow
+- Include: components, data flow, user experience
+- Make it visual and clear
+
+**2. Wait for Approval**
+- **MUST NOT** proceed until human confirms the plan
+
+**3. Create idea.md**
+- Path: `docs/features/[feature-name]/idea.md`
+- Include: Problem statement, solution design, ASCII diagrams, success criteria
+
+**4. Create build.md**
+- Path: `docs/features/[feature-name]/build.md`
+- Include: Step-by-step plan, files to change, testing strategy
+
+**5. Execute Step by Step**
+- Build one step at a time
+- Validate alignment after each step
+
+**6. Review & Validate**
+- Run tests
+- Update `docs/features/README.md`
+- Add completion to journal
+
+**Full protocol details:** See `atris.md` Phase 5.2
+
+---
+
+## Quick Reference
 
 **Key files:**
-- `atris/PERSONA.md` - How to communicate and work (READ THIS FIRST)
+- `atris/PERSONA.md` - Communication style (READ THIS FIRST)
 - `atris/MAP.md` - Navigation guide (where is X?)
 - `atris/TASK_CONTEXTS.md` - Active tasks (delete when done)
-- `atris/agent_team/*.md` - Agent specs for reference
+- `atris.md` - Full atrisDev protocol (Phase 5.2)
+- `atris/agent_team/*.md` - Agent specs
 
 ## Project Overview
 
