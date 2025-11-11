@@ -34,4 +34,15 @@ atris update
 
 ---
 
+## Latest Updates
+
+**v1.9.0** - Natural language interface. Just say what you want:
+- `atris` - Load context
+- `atris build dark mode` - Start building
+- `atris fix the auth bug` - Start debugging
+
+See [releases](https://github.com/atrislabs/atris.md/releases) for full changelog.
+
+---
+
 **License:** MIT | **Repo:** [github.com/atrislabs/atris.md](https://github.com/atrislabs/atris.md.git)
