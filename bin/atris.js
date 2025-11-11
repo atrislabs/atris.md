@@ -91,28 +91,43 @@ function shouldRefreshToken(token, bufferSeconds = TOKEN_REFRESH_BUFFER_SECONDS)
 }
 
 function showHelp() {
-  console.log('Usage: atris <command>');
   console.log('');
-  console.log('Commands:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('atrisDev — The new way to build with AI');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  console.log('Quick Start:');
+  console.log('');
+  console.log('  1. atris                  Load context, start building');
+  console.log('  2. Describe what you want (in your editor or terminal)');
+  console.log('  3. Agent shows visualization, you approve, it builds');
+  console.log('');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('');
+  console.log('Setup:');
   console.log('  init       - Initialize ATRIS in current project');
-  console.log('  log        - View or append to today\'s log');
-  console.log('  status     - Show system state (inbox, backlog, completions)');
-  console.log('  analytics  - Show insights from journal (velocity, trends, patterns)');
+  console.log('  update     - Update local files to latest version');
   console.log('');
-  console.log('  visualize  - Break down ideas with ASCII visualization');
-  console.log('  plan       - Create idea.md for a new feature');
-  console.log('  do         - Generate build.md and execute feature');
-  console.log('  review     - Validate execution and update docs');
+  console.log('Daily workflow:');
+  console.log('  atris      - Load context and start (recommended)');
+  console.log('  log        - Add ideas to inbox');
+  console.log('  status     - See active work and completions');
+  console.log('  analytics  - View productivity insights');
   console.log('');
-  console.log('  agent      - Select agent for this workspace');
-  console.log('  chat       - Interactive chat with ATRIS agents');
+  console.log('Legacy commands (still work, but "atris" is easier):');
+  console.log('  plan       - Manual planning mode');
+  console.log('  do         - Execute tasks');
+  console.log('  review     - Validate work');
+  console.log('');
+  console.log('Other:');
   console.log('  login      - Authenticate with Atris cloud (optional)');
-  console.log('  logout     - Remove stored credentials');
-  console.log('  whoami     - Show current authentication status');
-  console.log('');
-  console.log('  update     - Update local files from package to latest version');
+  console.log('  logout     - Remove credentials');
+  console.log('  whoami     - Show auth status');
   console.log('  version    - Show ATRIS version');
-  console.log('  help       - Show this help message');
+  console.log('  help       - Show this help');
+  console.log('');
+  console.log('💡 Tip: Just run "atris" to get started');
+  console.log('');
 }
 
 // Smart default: if no command, load context and enter brainstorm/planning mode

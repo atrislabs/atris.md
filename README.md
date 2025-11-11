@@ -1,25 +1,34 @@
 # atrisDev
 
-A new way to build and manage agents.
+High-quality AI development workflow. Works with any coding agent.
 
 ## Install
 
 ```bash
-npm install -g atrisdev
+npm install -g atris
 ```
 
-## Usage
+## Quick Start
 
 ```bash
 cd your-project
-atris init
+atris init    # Creates atris/ folder
+atris         # Loads context, ready to build
 ```
 
-See `atris/GETTING_STARTED.md` for full instructions.
+Then describe what you want to build. The agent will:
+1. Show you a visualization
+2. Wait for approval
+3. Create `docs/features/[name]/idea.md` + `build.md`
+4. Execute step by step
+5. Review and update docs
+
+Works with: Claude Code, Cursor, Windsurf, GitHub Copilot, any agent.
 
 ## Update
 
 ```bash
+npm update -g atris
 atris update
 ```
 
