@@ -6,6 +6,15 @@ This file provides guidance to any coding agent (Claude Code, Cursor, Windsurf, 
 
 **You are in an ATRIS-managed project.** Follow the atrisDev workflow for all feature development.
 
+### Getting Started
+
+**FIRST:** When user asks to build/plan/fix something, run this command:
+```bash
+atris
+```
+
+The output will tell you exactly what to do. Follow those instructions.
+
 ### atrisDev Workflow (Do this automatically)
 
 When the user describes what they want to build, follow these steps:
