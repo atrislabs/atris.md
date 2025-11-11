@@ -529,7 +529,7 @@ Agent **MUST NOT** proceed until the human confirms the plan is correct.
 
 **3. Create idea.md**
 
-Path: `docs/features/[feature-name]/idea.md`
+Path: `atris/features/[feature-name]/idea.md`
 
 Contents:
 - **Problem Statement** — What are we solving?
@@ -539,7 +539,7 @@ Contents:
 
 **4. Create build.md**
 
-Path: `docs/features/[feature-name]/build.md`
+Path: `atris/features/[feature-name]/build.md`
 
 Contents:
 - **Step-by-step Implementation Plan** — Ordered list of tasks
@@ -557,7 +557,7 @@ Contents:
 
 - Run all tests
 - Verify success criteria from idea.md
-- Update `docs/features/README.md` with new feature entry
+- Update `atris/features/README.md` with new feature entry
 - Add completion to journal: `## Completed ✅`
 
 ---

@@ -278,6 +278,15 @@ function initAtris() {
     console.log('✓ Created TASK_CONTEXTS.md placeholder');
   }
 
+  // Create features directory and README
+  const featuresDir = path.join(targetDir, 'features');
+  if (!fs.existsSync(featuresDir)) {
+    fs.mkdirSync(featuresDir, { recursive: true });
+    const featuresReadme = path.join(featuresDir, 'README.md');
+    fs.writeFileSync(featuresReadme, '# Features\n\nThis directory tracks all features built using the atrisDev protocol.\n\nEach feature has:\n- `[feature-name]/idea.md` - Problem, solution, diagrams, success criteria\n- `[feature-name]/build.md` - Implementation plan, files changed, testing\n\n---\n\n## Features Built\n\n*Features will appear here as you build them.*\n');
+    console.log('✓ Created features/ directory with README');
+  }
+
   const navigatorSource = path.join(__dirname, '..', 'atris', 'agent_team', 'navigator.md');
   const executorSource = path.join(__dirname, '..', 'atris', 'agent_team', 'executor.md');
   const validatorSource = path.join(__dirname, '..', 'atris', 'agent_team', 'validator.md');
@@ -336,9 +345,9 @@ The \`atris\` command will tell you to:
 1. Read atris.md (the full protocol)
 2. Show atris visualization
 3. Wait for approval
-4. Create docs/features/[name]/idea.md + build.md
+4. Create atris/features/[name]/idea.md + build.md
 5. Execute step by step
-6. Review and update docs
+6. Review and update atris/features/README.md
 
 DO NOT explore the codebase manually. Run \`atris\` first, then follow its instructions.`;
 

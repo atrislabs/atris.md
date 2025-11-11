@@ -3271,9 +3271,9 @@ async function atrisDevEntry(userInput = null) {
   console.log('atrisDev workflow (from atris.md Phase 5.2):');
   console.log('1. Show atris visualization');
   console.log('2. Wait for approval');
-  console.log('3. Create docs/features/[name]/idea.md + build.md');
+  console.log('3. Create atris/features/[name]/idea.md + build.md');
   console.log('4. Execute step by step');
-  console.log('5. Review and update docs');
+  console.log('5. Review and update atris/features/README.md');
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');

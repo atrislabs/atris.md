@@ -28,11 +28,11 @@ When the user describes what they want to build, follow these steps:
 - **MUST NOT** proceed until human confirms the plan
 
 **3. Create idea.md**
-- Path: `docs/features/[feature-name]/idea.md`
+- Path: `atris/features/[feature-name]/idea.md`
 - Include: Problem statement, solution design, ASCII diagrams, success criteria
 
 **4. Create build.md**
-- Path: `docs/features/[feature-name]/build.md`
+- Path: `atris/features/[feature-name]/build.md`
 - Include: Step-by-step plan, files to change, testing strategy
 
 **5. Execute Step by Step**
@@ -41,7 +41,7 @@ When the user describes what they want to build, follow these steps:
 
 **6. Review & Validate**
 - Run tests
-- Update `docs/features/README.md`
+- Update `atris/features/README.md`
 - Add completion to journal
 
 **Full protocol details:** See `atris.md` Phase 5.2
