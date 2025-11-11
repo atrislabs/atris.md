@@ -130,15 +130,31 @@ function showHelp() {
   console.log('');
 }
 
-// Smart default: if no command, load context and enter brainstorm/planning mode
-if (!command) {
-  atrisDevEntry()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error(`✗ Error: ${error.message || error}`);
-      process.exit(1);
-    });
-  // Early return to prevent further execution
+// Check if this is a known command or natural language input
+const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'plan', 'do', 'review',
+                       'agent', 'chat', 'login', 'logout', 'whoami', 'update', 'version', 'help'];
+
+// If no command OR command is not recognized, treat as natural language
+if (!command || !knownCommands.includes(command)) {
+  const userInput = process.argv.slice(2).join(' ');
+
+  if (!userInput) {
+    // Cold start - no input, show context
+    atrisDevEntry()
+      .then(() => process.exit(0))
+      .catch((error) => {
+        console.error(`✗ Error: ${error.message || error}`);
+        process.exit(1);
+      });
+  } else {
+    // Hot start - user provided task description
+    atrisDevEntry(userInput)
+      .then(() => process.exit(0))
+      .catch((error) => {
+        console.error(`✗ Error: ${error.message || error}`);
+        process.exit(1);
+      });
+  }
   return;
 }
 
@@ -3119,8 +3135,9 @@ function recordBrainstormSession(
   fs.writeFileSync(logFile, content);
 }
 
-async function atrisDevEntry() {
+async function atrisDevEntry(userInput = null) {
   // Load workspace context and present planning-ready state
+  // userInput: optional task description for hot start
   const targetDir = path.join(process.cwd(), 'atris');
 
   // Check if ATRIS is initialized
@@ -3235,25 +3252,44 @@ async function atrisDevEntry() {
   console.log('📋 Instructions for Coding Agent');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('You are in an atrisDev workspace. Follow this protocol:');
-  console.log('');
-  console.log('1. Read atris/CLAUDE.md for full workflow details');
-  console.log('');
-  console.log('2. When user describes what they want, follow atrisDev:');
-  console.log('   - Show atris visualization (diagram of the plan)');
-  console.log('   - Wait for user approval');
-  console.log('   - Create docs/features/[name]/idea.md');
-  console.log('   - Create docs/features/[name]/build.md');
-  console.log('   - Execute step by step');
-  console.log('   - Review and update docs/features/README.md');
-  console.log('');
-  console.log('3. Reference atris/MAP.md for file locations');
-  console.log('');
-  console.log('4. Protocol details: atris.md Phase 5.2');
-  console.log('');
+
+  if (userInput) {
+    // Hot start - user provided task
+    console.log('🎯 User Request:');
+    console.log(`   "${userInput}"`);
+    console.log('');
+    console.log('You are in an atrisDev workspace. Execute this request:');
+    console.log('');
+    console.log('1. Read atris/CLAUDE.md for full workflow');
+    console.log('2. Show atris visualization for this request');
+    console.log('3. Wait for approval');
+    console.log('4. Create docs/features/[name]/idea.md + build.md');
+    console.log('5. Execute step by step');
+    console.log('6. Review and update docs');
+    console.log('');
+    console.log('Reference: atris/MAP.md for file locations');
+    console.log('');
+  } else {
+    // Cold start - no specific task
+    console.log('You are in an atrisDev workspace. Follow this protocol:');
+    console.log('');
+    console.log('1. Read atris/CLAUDE.md for full workflow details');
+    console.log('');
+    console.log('2. When user describes what they want, follow atrisDev:');
+    console.log('   - Show atris visualization (diagram of the plan)');
+    console.log('   - Wait for user approval');
+    console.log('   - Create docs/features/[name]/idea.md');
+    console.log('   - Create docs/features/[name]/build.md');
+    console.log('   - Execute step by step');
+    console.log('   - Review and update docs/features/README.md');
+    console.log('');
+    console.log('3. Reference atris/MAP.md for file locations');
+    console.log('');
+    console.log('4. Protocol details: atris.md Phase 5.2');
+    console.log('');
+  }
+
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('');
-  console.log('Human: Describe what you want to build, agent will follow atrisDev.');
   console.log('');
 }
 
