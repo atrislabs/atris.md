@@ -1,7 +1,7 @@
 {
   "name": "atris",
-  "version": "1.8.0",
-  "description": "Universal system instrumentation for AI agents - works for code, product, sales, and more",
+  "version": "1.8.1",
+  "description": "atrisDev - A new way to build and manage agents",
   "main": "bin/atris.js",
   "bin": {
     "atris": "bin/atris.js"

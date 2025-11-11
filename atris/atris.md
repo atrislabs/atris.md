@@ -271,13 +271,198 @@ After MAP.md generation, agents receive project context injection (framework, ke
 
 **Daily Goal:** Inbox zero. All thoughts processed, tasks executed, docs updated.
 
-### CLI Shortcuts
+---
 
-- `atris activate` — load today's context (MAP, TASK_CONTEXTS, log)
-- `atris visualize` — approval gate: 3-4 step summary + ASCII before creating tasks
-- `atris plan` / `atris do` / `atris review` — rapid agent activation for navigator / executor / validator
-- `atris autopilot` — guided plan → do → review loop with explicit success criteria and journaling
-- `atris brainstorm` — generate a Claude-ready brainstorm prompt and optionally log the session summary + next steps
+## Phase 5.1: Journal Protocol v1.0
+
+**The ATRIS Journal is a standardized markdown format that enables:**
+- **Human → Agent coordination** (brain dumps → structured tasks)
+- **Multi-agent coordination** (agents communicate via journal sections)
+- **Markdown → UI rendering** (structured data for kanban, charts, progress bars)
+- **Self-evolution** (journal tracks issues, system fixes itself)
+
+**Same markdown = CLI readable + UI renderable + agent parsable.**
+
+---
+
+### Section Semantics
+
+**Structured Sections** (parsable for UI rendering):
+- **`## Inbox`** — Unfiltered thoughts, ideas, issues. Navigator processes these.
+- **`## Backlog`** — Tasks extracted from Inbox, not yet started.
+- **`## In Progress 🔄`** — Tasks currently being worked on (with `**Claimed by:**` metadata).
+- **`## Completed ✅`** — Finished work with timestamps and learnings.
+
+**Free-Form Sections** (rich text editors):
+- **`## Notes`** — Session notes, meeting notes, context.
+- **`## Lessons Learned`** — Patterns, insights, reusable knowledge.
+
+**Metadata Sections**:
+- **`## Timestamps`** — Activity log (optional, for analytics).
+
+---
+
+### Format Rules (Regex-Friendly)
+
+**Structured Items** (enables UI parsing):
+
+**Inbox Items:**
+```
+- **I{n}:** Description
+```
+- Pattern: `/^- \*\*I(\d+):\*\*\s*(.+)$/`
+- Example: `- **I1:** Add auth to upload endpoint`
+- UI: Renders as cards in inbox view
+
+**Completed Items:**
+```
+- **C{n}:** Description
+```
+- Pattern: `/^- \*\*C(\d+):\*\*\s*(.+)$/`
+- Example: `- **C1:** Fixed bidirectional journal sync`
+- UI: Renders in timeline/chart view
+
+**Tasks:**
+```
+- **T{n}:** Description
+```
+- Pattern: `/^- \*\*T(\d+):\*\*\s*(.+)$/`
+- Example: `- **T1:** Add Journal Protocol to atris.md`
+- UI: Renders in kanban board (Backlog → In Progress → Completed)
+
+**Status Metadata:**
+```
+**Claimed by:** [Agent/Name] at [Timestamp]
+**Status:** [Status text]
+```
+- Pattern: `/\*\*Claimed by:\*\* (.+)/`
+- UI: Renders as progress bars, ownership indicators
+
+**Free-Form Sections:**
+- No format rules required. Use standard markdown (headings, lists, code blocks, etc.).
+- UI: Renders in rich text editor with full markdown support.
+
+---
+
+### Markdown → UI Mapping
+
+**Structured sections → UI components:**
+- **Inbox** → Card grid (each `I{n}` item = card)
+- **Backlog** → Kanban column (each `T{n}` item = card)
+- **In Progress** → Kanban column + progress indicators (`**Claimed by:**` → avatar/badge)
+- **Completed** → Timeline view (each `C{n}` item = timeline entry)
+
+**Free-form sections → Rich editors:**
+- **Notes** → Markdown editor (WYSIWYG or source)
+- **Lessons Learned** → Markdown editor with syntax highlighting
+
+**Metadata → UI widgets:**
+- `**Claimed by:**` → User avatar + name badge
+- `**Status:**` → Progress bar or status pill
+
+**Same file works for:**
+- CLI: `grep`, `cat`, standard text tools
+- Web: Parsed into React components
+- Mobile: Native UI with swipe gestures
+- Agent: Parse via regex, coordinate via section writes
+
+---
+
+### Agent Coordination Guidelines
+
+**Multi-agent write behavior:**
+
+**Navigator Agent:**
+- Reads: `## Inbox` section
+- Writes: `## Backlog` section (creates tasks from inbox items)
+- Writes: `## Notes` section (planning notes, ASCII diagrams)
+
+**Executor Agent:**
+- Reads: `## Backlog` section
+- Writes: `## In Progress 🔄` section (claims task with `**Claimed by:**`)
+- Writes: `## Completed ✅` section (when done, with timestamps)
+- Writes: `## Notes` section (execution notes, debugging notes)
+
+**Validator Agent:**
+- Reads: `## Completed ✅` section
+- Writes: `## Lessons Learned` section (extracts patterns)
+- Writes: `## Notes` section (validation results, test outcomes)
+
+**Launcher Agent:**
+- Reads: `## Completed ✅` section
+- Writes: `## Notes` section (launch summary, learnings)
+- Moves: Inbox items to Completed (closes the loop)
+
+**Conflict Resolution:**
+- If multiple agents write to same section simultaneously, use section-level merge (append, don't overwrite).
+- If same item ID used (`I1`, `C1`, `T1`), prefer most recent write (timestamp-based).
+
+---
+
+### Bloat Prevention (Pareto Principle)
+
+**Daily Rotation:**
+- Each day = new journal file: `logs/YYYY/YYYY-MM-DD.md`
+- Previous days archived automatically (no manual cleanup needed)
+- Keeps individual files lean (~500-1,500 lines max)
+
+**Structured Updates:**
+- Follow PERSONA.md rule: "3-4 sentences max" for agent-written content
+- Use structured formats (`I{n}`, `C{n}`, `T{n}`) instead of verbose logs
+- Free-form sections (Notes, Lessons) can be longer, but avoid repetition
+
+**Rejection Criteria:**
+- Validator rejects verbose agent updates: "Rewrite as summary"
+- Avoid: "Agent wrote 500 lines of debug logs to Notes section"
+- Prefer: "**C1:** Fixed sync bug - origin-aware dedupe (3-4 sentence summary)"
+
+**Result:**
+- Journal stays human-readable
+- Parse time remains fast (< 100ms for 1,500 lines)
+- UI rendering stays performant
+- Self-evolution works (journal tracks issues → system fixes → journal stays lean)
+
+---
+
+### Example Journal Entry
+
+```markdown
+# Log — 2025-11-05
+
+## Completed ✅
+
+- **C1:** Fixed bidirectional journal sync
+  - Problem: Web edits didn't sync to CLI
+  - Solution: Added auto-pull when web is newer + local unchanged
+  - Impact: Users can edit on web (mobile) and sync seamlessly
+
+## In Progress 🔄
+
+- **T1:** Add Journal Protocol to atris.md
+  **Claimed by:** Executor at 2025-11-05 18:30
+  **Status:** Writing protocol section
+
+## Backlog
+
+- **T2:** Update package.json version
+- **T3:** Test protocol spec with fresh init
+
+## Notes
+
+### Launch — Bidirectional Sync — 2025-11-05 10:30
+
+**What shipped:**
+Enhanced sync logic with auto-pull and conflict resolution.
+
+## Inbox
+
+(Inbox zero achieved)
+```
+
+**This format enables:**
+- CLI: `grep "I1"` finds inbox items
+- Web: Parses `I{n}` → renders as cards
+- Agent: Reads Inbox → writes Backlog → coordinates via sections
 
 ---
 

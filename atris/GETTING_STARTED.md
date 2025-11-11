@@ -9,13 +9,14 @@ You ran `atris init` and got this folder structure:
 ```
 atris/
 ├── GETTING_STARTED.md (you are here!)
+├── PERSONA.md (agent communication style)
 ├── atris.md (instructions for your AI agent)
-├── MAP.md (placeholder - will be populated)
-├── TASK_CONTEXTS.md (placeholder - will be populated)
+├── MAP.md (AI generates from your codebase)
+├── TASK_CONTEXTS.md (AI generates from MAP)
 └── agent_team/
-    ├── navigator.md (placeholder - will be populated)
-    ├── executor.md (placeholder - will be populated)
-    └── validator.md (placeholder - will be populated)
+    ├── navigator.md (pre-built template, ready to use)
+    ├── executor.md (pre-built template, ready to use)
+    └── validator.md (pre-built template, ready to use)
 ```
 
 ## Quick Start (3 Steps)
@@ -27,19 +28,51 @@ Open `atris/atris.md` in your editor. This file contains detailed instructions f
 Copy the entire contents of `atris.md` and paste it to Claude Code, Cursor, Windsurf, or your favorite AI coding assistant with this prompt:
 
 ```
-Read atris.md. Execute Phase 1-4 to scaffold this system.
+Read atris.md. Generate MAP.md and TASK_CONTEXTS.md for this project.
 ```
 
 ### Step 3: Watch the Magic
 Your AI agent will:
 - Scan your project and generate `MAP.md` (a navigation guide with file:line references)
-- Create 3 specialized agents in `agent_team/`:
-  - **navigator.md** - Answers "where is X?" questions
-  - **executor.md** - Executes tasks with full context
-  - **validator.md** - Validates changes and updates docs
 - Generate `TASK_CONTEXTS.md` with actionable tasks extracted from your system
+- Optionally inject project-specific context into the pre-built agent templates
 
-**Total time: ~10 minutes**
+**Agent templates ship ready to use:**
+- **navigator.md** - Answers "where is X?" questions
+- **executor.md** - Executes tasks with full context
+- **validator.md** - Validates changes and updates docs
+
+**Total time: ~5 minutes**
+
+## Load the context (no login required)
+
+At any point—before or after your AI agent runs—you can load the local context with:
+
+```bash
+atris activate
+```
+
+This shows today's journal, MAP.md, and TASK_CONTEXTS.md so you can browse and take notes offline. Authentication and agent selection are only required when you want to use `atris chat` with Atris cloud agents.
+
+## Try the autopilot loop (optional)
+
+Need a guided work session? Run:
+
+```bash
+atris autopilot
+```
+
+You'll pick a vision (from today's Inbox or a fresh idea), define success criteria, and then step through plan → do → review cycles. The CLI logs each iteration, and you can type `exit` at any prompt to stop.
+
+## Launch a brainstorm (optional)
+
+Need help shaping an idea before it becomes a task? Run:
+
+```bash
+atris brainstorm
+```
+
+Answer a couple quick questions, get a ready-to-send Claude Code conversation starter (context + ASCII cue), and choose whether to log the session summary and next steps.
 
 ## What Each File Does
 
@@ -105,26 +138,6 @@ Once the files are populated, you can interact with your agents:
 @validator check if the recent auth changes are safe to merge
 ```
 
-## Try the autopilot loop (optional)
-
-Need a guided work session? Run:
-
-```bash
-atris autopilot
-```
-
-Pick a vision (today's Inbox or a fresh idea), set success criteria, and follow the guided plan → do → review cycles. Each iteration gets logged, and you can type `exit` at any prompt to stop.
-
-## Launch a brainstorm (optional)
-
-Need to shape an idea before creating tasks? Run:
-
-```bash
-atris brainstorm
-```
-
-Answer a couple quick questions, generate a Claude Code-ready conversation starter (context + ASCII cue), and optionally log the brainstorm summary with next steps.
-
 ## Keeping ATRIS Updated
 
 When the ATRIS package updates with new features:
@@ -134,13 +147,13 @@ cd /path/to/your/project
 atris update
 ```
 
-This syncs your local `atris.md` to the latest version. Re-run your AI agent to regenerate files with the new spec.
+This syncs your local `atris.md` and agent templates to the latest version. Re-run your AI agent to regenerate MAP.md with the new spec.
 
 ## What's Next?
 
-1. **Let your AI agent populate the files** (Step 2 above if you haven't already)
+1. **Let your AI agent generate MAP.md** (Step 2 above if you haven't already)
 2. **Explore MAP.md** - Get familiar with your system's structure
-3. **Try the agents** - Ask navigator questions, run executor tasks
+3. **Try the pre-built agents** - Ask navigator questions, run executor tasks
 4. **Pick a task** - Check TASK_CONTEXTS.md for quick wins
 
 ## Need Help?

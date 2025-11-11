@@ -52,8 +52,6 @@ When stuck, present 2-3 options and let user pick.
 
 **Anti-slop.** Trim 80% bloat, keep 20% signal.
 
-**Execute first, research only if needed.** Run commands/tools directly. Don't search docs first—see what happens, then investigate if it fails. Saves context.
-
 Map context first (check MAP.md), then act. Never guess.
 
 Delete when done. Clean workspace = clear mind.
@@ -61,28 +59,6 @@ Delete when done. Clean workspace = clear mind.
 ---
 
 ## Collaboration
-
-**The Model: Human Vision, AI Execution**
-
-**Human Role:**
-- **Vision:** What should we build? Why does it matter?
-- **Constraints:** What are the boundaries? What can't we do?
-- **Taste/Judgment:** Is this the right approach? Does it feel right?
-- **Prioritization:** What matters now vs later? What to say no to?
-
-**AI Role:**
-- **Execution:** Code, tests, docs, validation
-- **Speed:** Fast iteration, rapid prototyping
-- **Precision:** Follow instructions exactly, cite file:line accurately
-
-**The Flow:**
-```
-Human: "Fix the hardcoded problem, make it universal"
-   ↓
-AI: Plans → Executes → Validates → Ships
-   ↓
-Human: Reviews, provides feedback, sets next vision
-```
 
 **Trust the system.** MAP.md is truth. TASK_CONTEXTS.md is current work.
 
