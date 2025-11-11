@@ -27,6 +27,9 @@ const DEFAULT_USER_AGENT = `${DEFAULT_CLIENT_ID} (node ${process.version}; ${os.
 // Update check utility
 const { checkForUpdates, showUpdateNotification } = require('../utils/update-check');
 
+// State detection for smart default
+const { detectWorkspaceState, loadContext } = require('../lib/state-detection');
+
 // Run update check in background (non-blocking)
 // Skip for 'version' and 'update' commands to avoid redundant messages
 let updateCheckPromise = null;
@@ -89,33 +92,105 @@ function shouldRefreshToken(token, bufferSeconds = TOKEN_REFRESH_BUFFER_SECONDS)
 
 function showHelp() {
   console.log('Usage: atris <command>');
+  console.log('');
   console.log('Commands:');
   console.log('  init       - Initialize ATRIS in current project');
-  console.log('  agent      - Select agent for this workspace');
-  console.log('  activate   - Load context and start chat with ATRIS agents');
-  console.log('  status     - Show system state (tasks, inbox, recent completions)');
-  console.log('  analytics  - Show insights from journal (velocity, trends, patterns)');
-  console.log('  plan       - Activate navigator (brainstorm and create tasks)');
-  console.log('  do         - Activate executor (build tasks from TASK_CONTEXTS)');
-  console.log('  console    - Execute tasks autonomously via Claude SDK');
-  console.log('  review     - Activate validator (verify, test, clean docs)');
-  console.log('  launch     - Activate launcher (document, capture learnings, publish, celebrate)');
-  console.log('  chat       - Interactive chat with ATRIS agents');
-  console.log('  brainstorm - Generate structured brainstorm prompt for agents (or execute via API in agent mode)');
-  console.log('  mode      - Set execution mode: agent (API) or prompt (text output)');
-  console.log('  autopilot  - Guided plan → do → review loop with success criteria');
-  console.log('  visualize  - Break down ideas from inbox with 3-4 sentences + ASCII diagram');
   console.log('  log        - View or append to today\'s log');
-  console.log('  log sync   - Sync today\'s log to Atris journal');
-  console.log('  update     - Update local files from package to latest version');
-  console.log('  version    - Show ATRIS version');
-  console.log('  login      - Authenticate with AtrisOS (optional, enables cloud sync)');
+  console.log('  status     - Show system state (inbox, backlog, completions)');
+  console.log('  analytics  - Show insights from journal (velocity, trends, patterns)');
+  console.log('');
+  console.log('  visualize  - Break down ideas with ASCII visualization');
+  console.log('  plan       - Create idea.md for a new feature');
+  console.log('  do         - Generate build.md and execute feature');
+  console.log('  review     - Validate execution and update docs');
+  console.log('');
+  console.log('  agent      - Select agent for this workspace');
+  console.log('  chat       - Interactive chat with ATRIS agents');
+  console.log('  login      - Authenticate with Atris cloud (optional)');
   console.log('  logout     - Remove stored credentials');
   console.log('  whoami     - Show current authentication status');
+  console.log('');
+  console.log('  update     - Update local files from package to latest version');
+  console.log('  version    - Show ATRIS version');
   console.log('  help       - Show this help message');
 }
 
-if (!command || command === 'help' || command === '--help' || command === '-h') {
+// Smart default: if no command, show intelligent state detection
+if (!command) {
+  try {
+    const workspaceDir = process.cwd();
+    const state = detectWorkspaceState(workspaceDir);
+    const context = loadContext(workspaceDir);
+
+    console.log('');
+
+    // Render state-specific message
+    if (state.state === 'fresh') {
+      console.log('🚀 Welcome to ATRIS\n');
+      console.log('Your workspace is ready. Time to get started.\n');
+      console.log('Next steps:');
+      console.log('  1. atris log          Add your first idea');
+      console.log('  2. atris brainstorm   Shape it with AI\n');
+      console.log('Or: atris help          See all commands\n');
+    } else if (state.state === 'in-progress') {
+      console.log('📍 In Progress\n');
+      console.log(`Feature: ${state.feature}`);
+      console.log('Status: In Progress\n');
+      console.log('What next?');
+      console.log(`  → atris do ${state.feature}       Continue building`);
+      console.log('  → atris log             Add thoughts');
+      console.log('  → atris plan            Change direction\n');
+    } else if (state.state === 'inbox') {
+      console.log('📥 You Have Ideas Waiting\n');
+      console.log(`${state.count} item${state.count > 1 ? 's' : ''} in Inbox:`);
+      state.items.forEach((item, i) => {
+        const preview = item.length > 50 ? item.substring(0, 47) + '...' : item;
+        console.log(`  ${i + 1}. ${preview}`);
+      });
+      console.log('\nWhat next?');
+      console.log('  → atris plan            Break one down into tasks');
+      console.log('  → atris do              Jump straight to building\n');
+    } else if (state.state === 'blocked') {
+      console.log('⚠️  You\'re Blocked\n');
+      console.log(`${state.reason}\n`);
+      console.log('Next:');
+      console.log('  → atris log             Document the blocker');
+      console.log('  → atris status          See details\n');
+    } else {
+      // ready state
+      console.log('✓ Ready to Work\n');
+      console.log('What do you want to do?');
+      console.log('  → atris log             Add an idea');
+      console.log('  → atris plan            Pick work from MAP');
+      console.log('  → atris do              Continue recent work\n');
+    }
+
+    // Show context if available
+    if (context.inProgressFeatures.length > 0) {
+      console.log('⚡ Active work:');
+      context.inProgressFeatures.forEach(feature => {
+        console.log(`   • ${feature}`);
+      });
+      console.log('');
+    }
+
+    if (context.hasInbox && context.inboxItems.length > 0) {
+      console.log(`📥 Inbox (${context.inboxItems.length}):`);
+      context.inboxItems.forEach(item => {
+        const preview = item.length > 50 ? item.substring(0, 47) + '...' : item;
+        console.log(`   • ${preview}`);
+      });
+      console.log('');
+    }
+
+  } catch (error) {
+    console.error('Error detecting workspace state:', error.message);
+    showHelp();
+  }
+  process.exit(0);
+}
+
+if (command === 'help' || command === '--help' || command === '-h') {
   showHelp();
   process.exit(0);
 }
@@ -125,7 +200,6 @@ const { initAtris: initCmd } = require('../commands/init');
 const { syncAtris: syncCmd } = require('../commands/sync');
 const { logAtris: logCmd } = require('../commands/log');
 const { logSyncAtris: logSyncCmd } = require('../commands/log-sync');
-const { brainstormAtris: brainstormCmd } = require('../commands/brainstorm');
 const { loginAtris: loginCmd, logoutAtris: logoutCmd, whoamiAtris: whoamiCmd } = require('../commands/auth');
 const { showVersion: versionCmd } = require('../commands/version');
 
@@ -145,8 +219,6 @@ if (command === 'init') {
   } else {
     logCmd();
   }
-} else if (command === 'activate') {
-  activateAtris();
 } else if (command === 'update') {
   syncCmd();
 } else if (command === 'chat') {
@@ -164,8 +236,6 @@ if (command === 'init') {
   logoutCmd();
 } else if (command === 'whoami') {
   whoamiCmd();
-} else if (command === 'mode') {
-  modeAtris();
 } else if (command === 'visualize') {
   visualizeAtris();
 } else if (command === 'plan') {
@@ -182,42 +252,11 @@ if (command === 'init') {
       console.error(`✗ Do failed: ${error.message || error}`);
       process.exit(1);
     });
-} else if (command === 'console') {
-  consoleAtris()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error(`✗ Console failed: ${error.message || error}`);
-      process.exit(1);
-    });
 } else if (command === 'review') {
   reviewAtris()
     .then(() => process.exit(0))
     .catch((error) => {
       console.error(`✗ Review failed: ${error.message || error}`);
-      process.exit(1);
-    });
-} else if (command === 'launch') {
-  launchAtris();
-} else if (command === 'autopilot') {
-  // Extract initial idea from args: "atris autopilot <idea text>"
-  const initialIdea = process.argv.slice(3).join(' ').trim();
-  autopilotAtris(initialIdea)
-    .then(() => process.exit(0))
-    .catch((error) => {
-      if (error && error.__autopilotAbort) {
-        process.exit(0);
-      }
-      console.error(`✗ Autopilot failed: ${error.message || error}`);
-      process.exit(1);
-    });
-} else if (command === 'brainstorm') {
-  brainstormCmd()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      if (error && error.__brainstormAbort) {
-        process.exit(0);
-      }
-      console.error(`✗ Brainstorm failed: ${error.message || error}`);
       process.exit(1);
     });
 } else if (command === 'status') {
@@ -1669,73 +1708,6 @@ async function agentAtris() {
   console.log(`\nYou can now use "atris chat" to talk with this agent.`);
 }
 
-async function activateAtris() {
-  console.log('Loading context...');
-  console.log('');
-
-  // Check atris/ exists
-  const targetDir = path.join(process.cwd(), 'atris');
-  if (!fs.existsSync(targetDir)) {
-    console.error('✗ Error: atris/ folder not found. Run "atris init" first.');
-    process.exit(1);
-  }
-
-  const config = loadConfig();
-  const credentials = loadCredentials();
-
-  const hasAgent = Boolean(config.agent_id);
-  const hasCredentials = Boolean(credentials && credentials.token);
-  const agentLabel = hasAgent ? (config.agent_name || config.agent_id) : null;
-
-  if (hasAgent) {
-    console.log(`✓ Agent ready: ${agentLabel}`);
-  } else {
-    console.log('⚠ No agent selected. Run "atris agent" to set one when you want to chat.');
-  }
-
-  if (hasCredentials) {
-    console.log('✓ Logged in to AtrisOS');
-  } else {
-    console.log('⚠ Not logged in. Run "atris login" to enable cloud sync and agent chat.');
-  }
-  console.log('');
-
-  // Read today's log
-  const { logFile, dateFormatted } = getLogPath();
-  let logEntries = [];
-
-  if (fs.existsSync(logFile)) {
-    const logContent = fs.readFileSync(logFile, 'utf8');
-    const lines = logContent.split('\n').filter(l => l.startsWith('**'));
-    logEntries = lines.slice(0, 3); // Last 3 entries
-  }
-
-  console.log('✓ Today\'s log (' + logEntries.length + ' entries)');
-  console.log('✓ MAP.md');
-  console.log('✓ TASK_CONTEXTS.md');
-  console.log('');
-  console.log('─────────────────────────────────────────────');
-  console.log('Recent log entries:');
-
-  if (logEntries.length > 0) {
-    logEntries.forEach(entry => {
-      const text = entry.replace(/\*\*.*?\*\*\s*—\s*/, '- ');
-      console.log(text);
-    });
-  } else {
-    console.log('(no entries yet)');
-  }
-
-  console.log('─────────────────────────────────────────────');
-  console.log('');
-  console.log('✓ Context loaded');
-  console.log('');
-  if (hasAgent && hasCredentials) {
-    console.log('Use "atris chat" to chat with your agent or "atris log" to edit your journal.');
-  } else {
-    console.log('Use "atris log" to edit your journal. When ready, run "atris agent" and "atris login" to chat with agents.');
-  }
-}
 
 async function chatAtris() {
   // Get message from command line args
@@ -3701,156 +3673,6 @@ async function doAtris() {
   // Prompt mode continues with existing output (already logged above)
 }
 
-async function consoleAtris() {
-  const targetDir = path.join(process.cwd(), 'atris');
-
-  // Check atris/ exists
-  if (!fs.existsSync(targetDir)) {
-    console.error('✗ Error: atris/ folder not found. Run "atris init" first.');
-    process.exit(1);
-  }
-
-  // Check credentials
-  const credentials = loadCredentials();
-  if (!credentials || !credentials.token) {
-    console.error('✗ Error: Not logged in. Run "atris login" first.');
-    process.exit(1);
-  }
-
-  // Check agent selected
-  const config = loadConfig();
-  if (!config.agent_id) {
-    console.error('✗ Error: No agent selected. Run "atris agent" first.');
-    process.exit(1);
-  }
-
-  // Read TASK_CONTEXTS.md
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
-  let taskContexts = '';
-  if (fs.existsSync(taskContextsFile)) {
-    taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
-  }
-
-  // Parse tasks from Backlog section
-  const backlogMatch = taskContexts.match(/## Backlog\n([\s\S]*?)(?=\n## In Progress|\n---|\n## Instructions|$)/);
-  const backlogContent = backlogMatch ? backlogMatch[1].trim() : '';
-
-  if (!backlogContent || backlogContent === '(No active tasks)' || backlogContent === '(Unclaimed tasks ready for execution)') {
-    console.log('');
-    console.log('✗ No tasks in Backlog. Create tasks first with "atris plan"');
-    console.log('');
-    process.exit(0);
-  }
-
-  // Extract task lines (simple parsing)
-  const taskLines = backlogContent
-    .split('\n')
-    .filter(line => line.trim() && !line.includes('(') && line.length > 10);
-
-  if (taskLines.length === 0) {
-    console.log('');
-    console.log('✗ No valid tasks in Backlog.');
-    console.log('');
-    process.exit(0);
-  }
-
-  console.log('');
-  console.log('┌─────────────────────────────────────────────────────────────┐');
-  console.log('│ ATRIS Console — Claude SDK Executor                         │');
-  console.log('└─────────────────────────────────────────────────────────────┘');
-  console.log('');
-  console.log('📋 Available Tasks:');
-  console.log('─────────────────────────────────────────────────────────────');
-
-  taskLines.forEach((task, idx) => {
-    const taskText = task.replace(/^[-*]\s*/, '').slice(0, 60);
-    console.log(`  ${idx + 1}. ${taskText}${task.length > 60 ? '...' : ''}`);
-  });
-
-  console.log('');
-
-  // Get user input
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
-
-  return new Promise((resolve) => {
-    rl.question('Select task number (or "q" to quit): ', async (answer) => {
-      rl.close();
-
-      if (answer.toLowerCase() === 'q') {
-        console.log('');
-        process.exit(0);
-      }
-
-      const taskIdx = parseInt(answer, 10) - 1;
-      if (isNaN(taskIdx) || taskIdx < 0 || taskIdx >= taskLines.length) {
-        console.error('✗ Invalid selection');
-        process.exit(1);
-      }
-
-      const selectedTask = taskLines[taskIdx];
-
-      // Read executor spec and MAP.md for context
-      const executorFile = path.join(targetDir, 'agent_team', 'executor.md');
-      let executorSpec = '';
-      if (fs.existsSync(executorFile)) {
-        executorSpec = fs.readFileSync(executorFile, 'utf8');
-      }
-
-      const mapFile = path.join(targetDir, 'MAP.md');
-      let mapContent = '';
-      if (fs.existsSync(mapFile)) {
-        mapContent = fs.readFileSync(mapFile, 'utf8');
-      }
-
-      // Build context message
-      const contextMessage = `## Task to Build
-${selectedTask}
-
-## Executor Spec
-${executorSpec}
-
-## Navigation Map (MAP.md)
-${mapContent}
-
----
-
-Follow the executor spec. Show ASCII diagrams for complex changes. Ask for confirmation before modifying files.`;
-
-      console.log('');
-      console.log('Spawning Claude Code session...');
-      console.log('─────────────────────────────────────────────────────────────');
-      console.log('');
-
-      // Spawn Claude Code session with Agent SDK
-      const agentId = config.agent_id;
-      const apiUrl = 'https://api.atris.ai';
-      const endpoint = `${apiUrl}/api/${agentId}/session`;
-
-      const body = JSON.stringify({
-        context: contextMessage,
-        working_directory: process.cwd(),
-        allowed_tools: ['Read', 'Write', 'Bash', 'Edit'],
-      });
-
-      try {
-        // Call backend to spawn Claude Code session
-        await spawnClaudeCodeSession(endpoint, credentials.token, body);
-        console.log('');
-        console.log('─────────────────────────────────────────────────────────────');
-        console.log('✓ Session complete. Returning to console...');
-        console.log('');
-        resolve();
-      } catch (error) {
-        console.error(`✗ Session failed: ${error.message || error}`);
-        process.exit(1);
-      }
-    });
-  });
-}
-
 async function reviewAtris() {
   const { loadConfig } = require('../utils/config');
   const { loadCredentials } = require('../utils/auth');
@@ -4610,33 +4432,3 @@ function analyticsAtris() {
   console.log('');
 }
 
-function modeAtris() {
-  const subcommand = process.argv[3];
-  const { loadConfig, saveConfig } = require('../utils/config');
-  
-  if (!subcommand || !['agent', 'prompt'].includes(subcommand)) {
-    console.log('Usage: atris mode <agent|prompt>');
-    console.log('');
-    console.log('  agent   - Execute commands via backend API (standalone agent mode)');
-    console.log('  prompt  - Output prompts for external AI (framework mode, default)');
-    console.log('');
-    const config = loadConfig();
-    const currentMode = config.execution_mode || 'prompt';
-    console.log(`Current mode: ${currentMode}`);
-    process.exit(0);
-  }
-
-  const config = loadConfig();
-  config.execution_mode = subcommand;
-  saveConfig(config);
-  
-  console.log(`✓ Execution mode set to: ${subcommand}`);
-  console.log('');
-  if (subcommand === 'agent') {
-    console.log('Commands will now execute via backend API.');
-    console.log('Make sure you are logged in: atris login');
-    console.log('And have an agent selected: atris agent');
-  } else {
-    console.log('Commands will now output prompts for external AI.');
-  }
-}
