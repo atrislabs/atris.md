@@ -3248,44 +3248,33 @@ async function atrisDevEntry(userInput = null) {
     console.log('');
   }
 
-  console.log('─────────────────────────────────────────────────────────────');
-  console.log('📋 Instructions for Coding Agent');
-  console.log('─────────────────────────────────────────────────────────────');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🤖 EXECUTE THIS IMMEDIATELY');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
-
-  console.log('⚠️  IMPORTANT: First, read atris/CLAUDE.md');
+  console.log('Read atris.md (the full protocol)');
   console.log('');
 
   if (userInput) {
     // Hot start - user provided task
-    console.log('🎯 User Request:');
-    console.log(`   "${userInput}"`);
+    console.log('User wants:');
+    console.log(`"${userInput}"`);
     console.log('');
-    console.log('After reading atris/CLAUDE.md, execute this request following atrisDev:');
-    console.log('');
-    console.log('1. Show atris visualization for this request');
-    console.log('2. Wait for user approval');
-    console.log('3. Create docs/features/[name]/idea.md + build.md');
-    console.log('4. Execute step by step');
-    console.log('5. Review and update docs');
-    console.log('');
-    console.log('Reference: atris/MAP.md for file locations');
+    console.log('Execute atrisDev protocol from atris.md for this request.');
     console.log('');
   } else {
     // Cold start - no specific task
-    console.log('After reading atris/CLAUDE.md, when user describes what they want:');
-    console.log('');
-    console.log('1. Show atris visualization (diagram of the plan)');
-    console.log('2. Wait for user approval');
-    console.log('3. Create docs/features/[name]/idea.md + build.md');
-    console.log('4. Execute step by step');
-    console.log('5. Review and update docs/features/README.md');
-    console.log('');
-    console.log('Reference: atris/MAP.md for file locations');
-    console.log('Protocol details: atris.md Phase 5.2');
+    console.log('Wait for user to describe what they want, then execute atrisDev protocol.');
     console.log('');
   }
 
+  console.log('atrisDev workflow (from atris.md Phase 5.2):');
+  console.log('1. Show atris visualization');
+  console.log('2. Wait for approval');
+  console.log('3. Create docs/features/[name]/idea.md + build.md');
+  console.log('4. Execute step by step');
+  console.log('5. Review and update docs');
+  console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
 }
