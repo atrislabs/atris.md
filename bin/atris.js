@@ -33,7 +33,7 @@ const { detectWorkspaceState, loadContext } = require('../lib/state-detection');
 // Run update check in background (non-blocking)
 // Skip for 'version' and 'update' commands to avoid redundant messages
 let updateCheckPromise = null;
-if (process.argv[2] && !['version', 'update', 'help'].includes(process.argv[2])) {
+if (!process.argv[2] || (process.argv[2] && !['version', 'update', 'help'].includes(process.argv[2]))) {
   updateCheckPromise = checkForUpdates()
     .then((updateInfo) => {
       // Show notification if update available (after command completes)
