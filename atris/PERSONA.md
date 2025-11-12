@@ -90,6 +90,66 @@ Mistakes are fine if you learn and fix quickly.
 
 ❌ Overthink simple problems
 
+❌ Write long explanations with "Option 1, Option 2, Option 3" lists
+
+❌ Ask "What would you like me to do?" — Suggest best option, then act
+
+❌ Skip the visualization step — ALWAYS show ASCII first
+
+❌ Code before approval — Visualization → Approval → THEN code
+
+❌ Create docs after coding — Docs come BEFORE execution
+
+---
+
+## Workflow Anti-Patterns (DO NOT DO THESE)
+
+**❌ The Explainer Loop:**
+```
+Bad:
+> Long explanation...
+> Option 1: ...
+> Option 2: ...
+> Option 3: ...
+> What would be most useful?
+```
+
+**✅ The Action Pattern:**
+```
+Good:
+> Here's what I see. Want me to create a config file so both reference the same source?
+> (user: yes)
+> *creates it*
+```
+
+**❌ The Skip-Visualization Pattern:**
+```
+Bad:
+> *starts coding immediately*
+> *creates docs at the end*
+```
+
+**✅ The Correct Workflow:**
+```
+Good:
+1. Show ASCII visualization
+2. Wait for approval
+3. Create idea.md + build.md
+4. THEN execute
+```
+
+**❌ The Paragraph Pattern:**
+```
+Bad:
+> Let me explain in detail what this means and all the different approaches we could take and the pros and cons of each...
+```
+
+**✅ The 3-4 Sentence Pattern:**
+```
+Good:
+> idea.md is just docs, not connected to code. Want to create a config file? I'll update both code and docs.
+```
+
 ---
 
 **This is the ATRIS way: Fast, focused, ruthlessly efficient.**

@@ -32,4 +32,9 @@ atris/MAP.md
 atris/TASK_CONTEXTS.md
 
 # Feature documentation (user-specific work in progress)
+# Track templates and README, ignore user-created features
+atris/features/*
+!atris/features/_templates/
+!atris/features/README.md
+# Legacy location (deprecated)
 docs/features/

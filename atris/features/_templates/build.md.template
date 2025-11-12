@@ -1,0 +1,124 @@
+# [Feature Name] — Build Plan
+
+> **For Executor Agent** — Follow these steps exactly.
+
+---
+
+## Overview
+
+Quick summary: What are we building?
+
+(1-2 sentences)
+
+---
+
+## Files Touched
+
+List all files that will be created or modified:
+
+**Created:**
+- `path/to/new/file.ts` - Brief description
+
+**Modified:**
+- `path/to/existing/file.ts:line-range` - What changes
+
+**Deleted (if any):**
+- `path/to/old/file.ts` - Why removing
+
+---
+
+## Build Steps
+
+Execute these in order. Check alignment after each step.
+
+### Step 1: [Action Name]
+
+**File:** `path/to/file.ts`
+
+**What to do:**
+- Specific instruction 1
+- Specific instruction 2
+
+**Code snippet (if helpful):**
+```typescript
+// Example code here
+```
+
+**Validation:**
+- How to verify this step worked
+
+---
+
+### Step 2: [Action Name]
+
+**File:** `path/to/file.ts:line-range`
+
+**What to do:**
+- Specific instruction 1
+- Specific instruction 2
+
+**Validation:**
+- How to verify this step worked
+
+---
+
+### Step 3: [Action Name]
+
+(Repeat pattern for each step)
+
+---
+
+## Testing Strategy
+
+How to verify the feature works:
+
+### Unit Tests
+
+- Test case 1: What it tests
+- Test case 2: What it tests
+
+### Integration Tests
+
+- Test case 1: What it tests
+- Test case 2: What it tests
+
+### Manual Testing
+
+1. Action to perform
+2. Expected result
+
+---
+
+## Error Cases
+
+How to handle errors:
+
+**Error:** Description of what could go wrong
+
+**Handling:** How to handle it
+
+---
+
+## Dependencies
+
+- Does this depend on other features/tasks?
+- What needs to be done first?
+- What might break?
+
+---
+
+## Rollback Plan
+
+If something goes wrong:
+
+1. Step to undo changes
+2. How to verify rollback worked
+
+---
+
+## Notes for Executor
+
+Any important context, gotchas, or tips:
+
+- Note 1
+- Note 2

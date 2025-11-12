@@ -391,12 +391,25 @@ rg "Phase 1" atris.md                       # Agent generation spec
 **Files:**
 - ⭐ `atris.md` (470 lines) — Technical spec for AI agents
 - ⭐ `GETTING_STARTED.md` (140 lines) — User guide
-- ⭐ `PERSONA.md` (89 lines) — Communication style
+- ⭐ `PERSONA.md` (155 lines) — Communication style & anti-slop patterns
+- ⭐ `atris/features/README.md` — Feature documentation guide
+- ⭐ `atris/features/_templates/` — idea.md & build.md templates
 - `README.md` (17 lines) — Project overview
+- `docs/README.md` — Legacy docs (deprecated, points to atris/features/)
 
-**Purpose:** atris.md = AI instructions, GETTING_STARTED.md = human instructions
+**Purpose:**
+- atris.md = AI instructions
+- GETTING_STARTED.md = human instructions
+- PERSONA.md = workflow enforcement, anti-slop examples (v1.9.7)
+- Features templates = standardized structure for new features (v1.9.7)
 
-**Search:** `rg "## Phase" atris.md`
+**Recent updates (v1.9.7):**
+- All `docs/features/` paths migrated to `atris/features/`
+- PERSONA.md expanded with workflow anti-patterns (no explainer loops, no skip-visualization)
+- CLI enforces approval gates: visualization → approval → docs → code
+- Feature templates created for consistent structure
+
+**Search:** `rg "## Phase" atris.md | rg "anti-pattern|⚠️  APPROVAL" atris/PERSONA.md bin/atris.js`
 
 ---
 

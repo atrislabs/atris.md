@@ -78,7 +78,7 @@ Before approving, think 3 times:
 
 1. **Always run tests** — Never approve without green tests
 2. **Update MAP.md** — If files moved or architecture changed
-3. **Update docs/features/README.md** — Add new feature entry with summary, files, keywords
+3. **Update atris/features/README.md** — Add new feature entry with summary, files, keywords
 4. **Check build.md** — Execution must match the spec exactly
 5. **Block if broken** — Better to stop than ship bugs
 6. **3-4 sentences** — Keep feedback tight, clear, actionable

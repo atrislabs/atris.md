@@ -32,7 +32,7 @@ atris         # Loads context, ready to build
 Then describe what you want to build. The agent will:
 1. Show you a visualization
 2. Wait for approval
-3. Create `docs/features/[name]/idea.md` + `build.md`
+3. Create `atris/features/[name]/idea.md` + `build.md`
 4. Execute step by step
 5. Review and update docs
 

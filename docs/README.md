@@ -6,20 +6,30 @@ Documentation for the ATRIS system: idea → build → ship.
 
 ## Structure
 
+> ⚠️ **DEPRECATED:** This documentation is outdated. Use `atris/features/` instead.
+>
+> See `atris/features/README.md` for current documentation.
+
+**Old structure (deprecated):**
 ```
 docs/
-├── README.md (you are here)
-├── features/
-│   ├── README.md (feature index - auto-maintained)
-│   └── [feature-name]/
-│       ├── idea.md (human layer: messy intent)
-│       └── build.md (agent layer: technical execution)
-├── examples/
-│   ├── product_plan.md (reference examples)
-│   └── technical_plan.md (reference examples)
-└── templates/
-    ├── idea.md (template for new features)
-    └── build.md (template for new features)
+├── README.md (you are here - OUTDATED)
+├── features/ (MOVED to atris/features/)
+├── examples/ (reference examples)
+└── templates/ (MOVED to atris/features/_templates/)
+```
+
+**New structure:**
+```
+atris/
+└── features/
+    ├── README.md (current documentation)
+    ├── _templates/
+    │   ├── idea.md.template
+    │   └── build.md.template
+    └── [feature-name]/
+        ├── idea.md
+        └── build.md
 ```
 
 ---
@@ -42,11 +52,17 @@ docs/
 
 ## Creating a New Feature
 
-1. **Copy templates:**
+1. **Run atris:**
    ```bash
-   mkdir docs/features/your-feature-name
-   cp docs/templates/idea.md docs/features/your-feature-name/
-   cp docs/templates/build.md docs/features/your-feature-name/
+   atris  # or atris plan
+   ```
+   Describe what you want, agent creates the feature folder automatically.
+
+   **Or manually copy templates:**
+   ```bash
+   mkdir atris/features/your-feature-name
+   cp atris/features/_templates/idea.md.template atris/features/your-feature-name/idea.md
+   cp atris/features/_templates/build.md.template atris/features/your-feature-name/build.md
    ```
 
 2. **Write your idea:**

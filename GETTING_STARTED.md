@@ -38,7 +38,7 @@ In your coding agent (Claude Code, Cursor, Windsurf, etc.), just describe what y
 The agent will automatically:
 1. Show you an **atris visualization** (diagram of the plan)
 2. Wait for your approval
-3. Create `docs/features/[name]/idea.md` + `build.md`
+3. Create `atris/features/[name]/idea.md` + `build.md`
 4. Execute step by step
 5. Review and update docs
 

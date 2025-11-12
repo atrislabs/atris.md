@@ -1,0 +1,78 @@
+# [Feature Name]
+
+> **Status:** planning | in-progress | complete
+> **Created:** YYYY-MM-DD
+> **Last Updated:** YYYY-MM-DD
+
+---
+
+## Problem Statement
+
+What problem are we solving? Why does this matter?
+
+(Keep it concise - 2-3 sentences)
+
+---
+
+## Solution Design
+
+How will we solve it? High-level approach.
+
+(Describe the solution in 3-4 sentences)
+
+---
+
+## ASCII Visualization
+
+Show the architecture, flow, or UI design:
+
+```
+[Insert ASCII diagram here]
+
+Example (Frontend):
+┌─────────────────────────────────┐
+│ COMPONENT NAME                  │
+├─────────────────────────────────┤
+│  [Element 1]                    │
+│  [Element 2]  [Element 3]       │
+└─────────────────────────────────┘
+
+Example (Backend):
+Request → Middleware → Handler → DB
+   ↓          ↓           ↓       ↓
+ Step1     Step2       Step3   Query
+
+Example (Database):
+┌────────────────────────────────┐
+│ table_name                     │
+├────────────────────────────────┤
+│ column_name  | type            │
+│ column_name  | type            │
+└────────────────────────────────┘
+```
+
+---
+
+## Success Criteria
+
+How do we know it works?
+
+- [ ] Criterion 1
+- [ ] Criterion 2
+- [ ] Criterion 3
+
+---
+
+## User Impact
+
+Who benefits? How does this change their experience?
+
+(2-3 sentences)
+
+---
+
+## Technical Notes
+
+Any important technical considerations, constraints, or dependencies.
+
+(Optional - only if needed)
