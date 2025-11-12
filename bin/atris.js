@@ -109,15 +109,15 @@ function showHelp() {
   console.log('  update     - Update local files to latest version');
   console.log('');
   console.log('Daily workflow:');
-  console.log('  atris      - Load context and start (recommended)');
+  console.log('  brainstorm - Explore ideas conversationally (optional)');
+  console.log('  plan       - Create build spec with visualization');
+  console.log('  do         - Execute tasks');
+  console.log('  review     - Validate work (2-pass with auto-fix)');
   console.log('  log        - Add ideas to inbox');
   console.log('  status     - See active work and completions');
-  console.log('  analytics  - View productivity insights');
   console.log('');
-  console.log('Legacy commands (still work, but "atris" is easier):');
-  console.log('  plan       - Manual planning mode');
-  console.log('  do         - Execute tasks');
-  console.log('  review     - Validate work');
+  console.log('Quick commands:');
+  console.log('  atris      - Load context and start (natural language)');
   console.log('');
   console.log('Other:');
   console.log('  login      - Authenticate with Atris cloud (optional)');
@@ -131,7 +131,7 @@ function showHelp() {
 }
 
 // Check if this is a known command or natural language input
-const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'plan', 'do', 'review',
+const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'brainstorm', 'plan', 'do', 'review',
                        'agent', 'chat', 'login', 'logout', 'whoami', 'update', 'version', 'help'];
 
 // If no command OR command is not recognized, treat as natural language
@@ -206,6 +206,13 @@ if (command === 'init') {
   whoamiCmd();
 } else if (command === 'visualize') {
   visualizeAtris();
+} else if (command === 'brainstorm') {
+  brainstormAtris()
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(`✗ Brainstorm failed: ${error.message || error}`);
+      process.exit(1);
+    });
 } else if (command === 'plan') {
   planAtris()
     .then(() => process.exit(0))
@@ -2126,6 +2133,25 @@ async function brainstormAtris() {
     console.log(promptText);
     console.log('```');
     console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('💬 Brainstorm Mode — Thinking Together');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
+    console.log('For the agent: Be conversational and supportive:');
+    console.log('  • 3-4 sentences max per response');
+    console.log('  • Ask ONE question at a time (never multiple)');
+    console.log('  • Supportive tone: "That makes sense. What about X?"');
+    console.log('  • No files created (exploration only)');
+    console.log('  • User says "ready" or "plan" to exit brainstorm');
+    console.log('');
+    console.log('Example:');
+    console.log('  User: "notifications but not sure"');
+    console.log('  You: "What bothers you about current notifications?"');
+    console.log('  User: "Easy to miss"');
+    console.log('  You: "Makes sense. What if they stayed visible until dismissed?"');
+    console.log('');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('');
 
     const logChoice = await askYesNo('Log this brainstorm session to today\'s journal? (y/n): ');
     if (logChoice) {
@@ -3330,11 +3356,30 @@ async function planAtris() {
     taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
   }
 
+  // Detect uncertainty in inbox context
+  const uncertaintySignals = ['not sure', 'maybe', 'but ', 'thinking about', 'uncertain', 'unclear', 'unsure', 'don\'t know'];
+  const hasUncertainty = inboxContext && uncertaintySignals.some(signal =>
+    inboxContext.toLowerCase().includes(signal)
+  );
+
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────────┐');
   console.log('│ ATRIS Plan — Navigator Agent Activated                      │');
   console.log('└─────────────────────────────────────────────────────────────┘');
   console.log('');
+
+  // Show suggestion if uncertainty detected
+  if (hasUncertainty) {
+    console.log('💡 Suggestion:');
+    console.log('   Sounds like you\'re exploring options.');
+    console.log('   Try `atris brainstorm` first for conversational exploration,');
+    console.log('   then run `atris plan` when ready to commit.');
+    console.log('');
+    console.log('   Or continue with plan if you prefer. Your call.');
+    console.log('');
+    console.log('─────────────────────────────────────────────────────────────');
+    console.log('');
+  }
   console.log('📋 AGENT SPEC:');
   console.log('─────────────────────────────────────────────────────────────');
   console.log(navigatorSpec);

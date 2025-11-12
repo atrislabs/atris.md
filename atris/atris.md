@@ -496,6 +496,30 @@ The agent executes this workflow:
 
 ### atrisDev Workflow Steps
 
+**0. (Optional) Brainstorm Mode**
+
+If uncertain about requirements, run `atris brainstorm` first for conversational exploration:
+
+- **Purpose:** Think together before committing to a plan
+- **Style:** 3-4 sentences max, one question at a time, supportive tone
+- **Output:** No files created (exploration only)
+- **Exit:** User says "ready" or "plan" to proceed to visualization
+
+**Example:**
+```
+User: "I want notifications but not sure which type"
+Agent: "What bothers you about current notifications?"
+User: "Easy to miss"
+Agent: "Makes sense. What if they stayed visible until dismissed?"
+User: "Yeah but not blocking"
+Agent: "So persistent but non-blocking. Corner banner that slides in?"
+User: "Exactly!"
+Agent: "Got it. Ready to see what that looks like? (say 'plan' when ready)"
+```
+
+If `atris plan` detects uncertainty ("not sure", "maybe", "but..."), it will suggest:
+> "Sounds like you're exploring. Try `atris brainstorm` first?"
+
 **1. Show atris Visualization**
 
 Before writing any code, the agent creates a visual diagram showing:

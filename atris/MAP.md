@@ -10,6 +10,7 @@
 ```bash
 # Core CLI logic
 rg "function atrisDevEntry" bin/atris.js    # Main entry point (atris command)
+rg "function brainstormAtris" bin/atris.js  # Brainstorm command (v2.0.0)
 rg "function planAtris" bin/atris.js        # Plan command
 rg "function doAtris" bin/atris.js          # Do command
 rg "function reviewAtris" bin/atris.js      # Review command
@@ -118,6 +119,29 @@ rg "Phase 1" atris.md                       # Agent generation spec
 - **Value:** Sync journal between CLI and web app
 
 **Search:** `rg "logSyncAtris" commands/log-sync.js`
+
+### Feature: Brainstorm Mode (`atris brainstorm`) — v2.0.0
+**Purpose:** Conversational exploration before planning - supportive, one question at a time
+
+- **Entry point:** `bin/atris.js:209-215` (command routing)
+- **Handler:** `bin/atris.js:1891-2147` (brainstormAtris function)
+- **Conversational instructions:** `bin/atris.js:2122-2147`
+- **Uncertainty detection:** `bin/atris.js:3360-3375` (suggests brainstorm in plan command)
+- **How it works:**
+  - Interactive session with supportive questioning
+  - 3-4 sentences max per response
+  - ONE question at a time (never multiple)
+  - No files created (exploration only)
+  - User says "ready" or "plan" to exit
+- **Workflow:** Optional step 0 before `atris plan`
+  - brainstorm (optional) → plan → do → review
+- **Value:** Helps users clarify uncertain ideas before committing to implementation
+- **Documentation:**
+  - `atris/PERSONA.md:31-67` (brainstorm mode communication style)
+  - `atris.md:499-521` (Phase 5.2 workflow with step 0)
+  - `atris/features/brainstorm/` (feature specs)
+
+**Search:** `rg "brainstormAtris" bin/atris.js`
 
 ### Feature: System Status (`atris status`)
 **Purpose:** Quick visibility into system state - supports parallel work

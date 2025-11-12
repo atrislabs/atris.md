@@ -74,13 +74,20 @@ cp atris/features/_templates/build.md.template atris/features/your-feature-name/
 
 ### Active Features
 
-(None yet - run `atris` to create your first feature!)
+(No active features in development)
 
 ---
 
 ### Completed Features
 
-(Completed features will be listed here)
+#### brainstorm — v2.0.0
+Conversational exploration mode for uncertain ideas
+- **Files:** bin/atris.js, atris/atris.md, atris/PERSONA.md, GETTING_STARTED.md, README.md, atris/MAP.md
+- **Status:** complete
+- **Keywords:** brainstorm, conversational, exploration, pre-planning, v2.0.0
+- **What:** Optional step 0 before `atris plan` for exploring ideas one question at a time
+- **Why:** Users need supportive thinking partner when uncertain about requirements
+- **Completed:** 2025-11-11 (shipped in v2.0.0)
 
 ---
 
