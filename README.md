@@ -1,6 +1,6 @@
 # atrisDev
 
-High-quality AI development workflow. Works with any coding agent.
+A better way to build with your coding agents.
 
 ## For Coding Agents
 
@@ -52,10 +52,6 @@ atris update
 
 ## Latest Updates
 
-**v1.9.0** - Natural language interface. Just say what you want:
-- `atris` - Load context
-- `atris build dark mode` - Start building
-- `atris fix the auth bug` - Start debugging
 
 See [releases](https://github.com/atrislabs/atris.md/releases) for full changelog.
 
