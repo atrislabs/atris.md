@@ -1853,91 +1853,68 @@ async function atrisDevEntry(userInput = null) {
   const state = detectWorkspaceState(workspaceDir);
   const context = loadContext(workspaceDir);
 
+  // Detect existing features
+  const featuresDir = path.join(targetDir, 'features');
+  let existingFeatures = [];
+  if (fs.existsSync(featuresDir)) {
+    existingFeatures = fs.readdirSync(featuresDir)
+      .filter(name => {
+        const featurePath = path.join(featuresDir, name);
+        return fs.statSync(featurePath).isDirectory() && !name.startsWith('_');
+      });
+  }
+
   console.log('');
   console.log('┌─────────────────────────────────────────────────────────────┐');
-  console.log('│ atrisDev — Context Loaded, Ready to Plan                    │');
+  console.log('│ ATRIS MODE                                                  │');
   console.log('└─────────────────────────────────────────────────────────────┘');
   console.log('');
   console.log(`📅 ${dateFormatted}`);
   console.log('');
 
-  // Show active work if any
-  if (context.inProgressFeatures.length > 0) {
-    console.log('⚡ Active Work:');
-    context.inProgressFeatures.forEach(feature => {
-      console.log(`   • ${feature}`);
-    });
+  // Show existing features
+  if (existingFeatures.length > 0) {
+    console.log('📦 Features: ' + existingFeatures.join(', '));
     console.log('');
   }
 
-  // Show inbox items or cold start message
+  // Show active work
+  if (context.inProgressFeatures.length > 0) {
+    console.log('⚡ Active: ' + context.inProgressFeatures.join(', '));
+    console.log('');
+  }
+
+  // Show inbox
   if (context.hasInbox && context.inboxItems.length > 0) {
-    console.log(`📥 Inbox (${context.inboxItems.length} idea${context.inboxItems.length > 1 ? 's' : ''}):`);
-    context.inboxItems.slice(0, 5).forEach((item, i) => {
-      const preview = item.length > 60 ? item.substring(0, 57) + '...' : item;
+    console.log(`📥 Inbox (${context.inboxItems.length}):`);
+    context.inboxItems.slice(0, 3).forEach((item, i) => {
+      const preview = item.length > 50 ? item.substring(0, 47) + '...' : item;
       console.log(`   ${i + 1}. ${preview}`);
     });
-    if (context.inboxItems.length > 5) {
-      console.log(`   ... and ${context.inboxItems.length - 5} more`);
-    }
-    console.log('');
-  } else {
-    console.log('💭 Fresh slate — ready to build something new\n');
-  }
-
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('💬 atrisDev Protocol — Ready to build');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('');
-
-  // Show context only if there's something to show
-  let hasContext = false;
-
-  if (context.inProgressFeatures.length > 0) {
-    hasContext = true;
-    console.log('⚡ Active Work:');
-    context.inProgressFeatures.forEach(feature => {
-      console.log(`   • ${feature}`);
-    });
-    console.log('');
-  }
-
-  if (context.hasInbox && context.inboxItems.length > 0) {
-    hasContext = true;
-    console.log('📥 Inbox Ideas:');
-    context.inboxItems.slice(0, 5).forEach((item, i) => {
-      const preview = item.length > 60 ? item.substring(0, 57) + '...' : item;
-      console.log(`   ${i + 1}. ${preview}`);
-    });
-    if (context.inboxItems.length > 5) {
-      console.log(`   ... and ${context.inboxItems.length - 5} more`);
+    if (context.inboxItems.length > 3) {
+      console.log(`   ... and ${context.inboxItems.length - 3} more`);
     }
     console.log('');
   }
 
+  // Show recent completions
   const logContent = fs.existsSync(logFile) ? fs.readFileSync(logFile, 'utf8') : '';
   const completedMatch = logContent.match(/## Completed ✅\n([\s\S]*?)(?=\n##|$)/);
   if (completedMatch && completedMatch[1].trim()) {
     const completedItems = completedMatch[1].trim().split('\n')
       .filter(line => line.match(/^- \*\*C\d+:/))
-      .slice(-3);
+      .slice(-2);
     if (completedItems.length > 0) {
-      hasContext = true;
-      console.log('✅ Recent Completions:');
+      console.log('✅ Recent:');
       completedItems.forEach(item => {
         const match = item.match(/^- \*\*C\d+:\s*(.+)\*\*/);
         if (match) {
-          const text = match[1].length > 60 ? match[1].substring(0, 57) + '...' : match[1];
+          const text = match[1].length > 50 ? match[1].substring(0, 47) + '...' : match[1];
           console.log(`   • ${text}`);
         }
       });
       console.log('');
     }
-  }
-
-  if (!hasContext) {
-    console.log('💭 Fresh slate — ready to build something new');
-    console.log('');
   }
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -1962,21 +1939,19 @@ async function atrisDevEntry(userInput = null) {
   console.log('   Create diagrams showing architecture/flow/UI');
   console.log('   SHOW diagrams to user and WAIT for approval.');
   console.log('');
-  console.log('STEP 2: After approval, ask user where to save the plan');
-  console.log('   Options:');
-  console.log('   A) Create NEW feature folder: atris/features/[name]/');
-  console.log('   B) Update EXISTING feature: atris/features/[existing-name]/');
-  console.log('   C) Simple task: Just update TASK_CONTEXTS.md');
+  console.log('STEP 2: After approval, determine scope');
+  if (existingFeatures.length > 0) {
+    console.log('   Existing: ' + existingFeatures.join(', '));
+  }
+  console.log('   NEW feature → atris/features/[name]/idea.md + build.md');
+  console.log('   EXISTING → Update that feature\'s docs');
+  console.log('   SIMPLE → TASK_CONTEXTS.md only');
   console.log('');
-  console.log('   Check atris/features/ to see what exists.');
-  console.log('   Suggest the right option based on scope.');
+  console.log('STEP 3: Create/update docs');
+  console.log('   idea.md = intent (any format)');
+  console.log('   build.md = technical spec');
   console.log('');
-  console.log('STEP 3: Based on user choice, create the docs');
-  console.log('   If NEW (A): Create folder + idea.md + build.md + update README');
-  console.log('   If EXISTING (B): Update build.md in that folder');
-  console.log('   If SIMPLE (C): Add to TASK_CONTEXTS.md');
-  console.log('');
-  console.log('⛔ DO NOT execute build.md — that\'s for "atris do"');
+  console.log('⛔ DO NOT execute — that\'s for "atris do"');
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
