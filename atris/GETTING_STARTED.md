@@ -12,7 +12,7 @@ atris/
 ├── PERSONA.md (agent communication style)
 ├── atris.md (instructions for your AI agent)
 ├── MAP.md (AI generates from your codebase)
-├── TASK_CONTEXTS.md (AI generates from MAP)
+├── TODO.md (AI generates from MAP; formerly TASK_CONTEXTS.md)
 └── agent_team/
     ├── navigator.md (pre-built template, ready to use)
     ├── executor.md (pre-built template, ready to use)
@@ -28,13 +28,13 @@ Open `atris/atris.md` in your editor. This file contains detailed instructions f
 Copy the entire contents of `atris.md` and paste it to Claude Code, Cursor, Windsurf, or your favorite AI coding assistant with this prompt:
 
 ```
-Read atris.md. Generate MAP.md and TASK_CONTEXTS.md for this project.
+Read atris.md. Generate MAP.md and TODO.md for this project.
 ```
 
 ### Step 3: Watch the Magic
 Your AI agent will:
 - Scan your project and generate `MAP.md` (a navigation guide with file:line references)
-- Generate `TASK_CONTEXTS.md` with actionable tasks extracted from your system
+- Generate `TODO.md` with actionable tasks extracted from your system
 - Optionally inject project-specific context into the pre-built agent templates
 
 **Agent templates ship ready to use:**
@@ -52,7 +52,7 @@ At any point—before or after your AI agent runs—you can load the local conte
 atris activate
 ```
 
-This shows today's journal, MAP.md, and TASK_CONTEXTS.md so you can browse and take notes offline. Authentication and agent selection are only required when you want to use `atris chat` with Atris cloud agents.
+This shows today's journal, MAP.md, and TODO.md so you can browse and take notes offline. Authentication and agent selection are only required when you want to use `atris chat` with Atris cloud agents.
 
 ## Try the autopilot loop (optional)
 
@@ -109,7 +109,7 @@ Your quality gatekeeper. Runs after changes to:
 - Run tests and type checks
 - Report risks
 
-### TASK_CONTEXTS.md
+### TODO.md
 Auto-generated task bank with:
 - Task complexity (Trivial → Epic)
 - Exact file:line references
@@ -130,7 +130,7 @@ Once the files are populated, you can interact with your agents:
 
 **Give tasks to the executor:**
 ```
-@executor add rate limiting to the API (see TASK_CONTEXTS.md T-005)
+@executor add rate limiting to the API (see TODO.md T-005)
 ```
 
 **Validate changes:**
@@ -154,7 +154,7 @@ This syncs your local `atris.md` and agent templates to the latest version. Re-r
 1. **Let your AI agent generate MAP.md** (Step 2 above if you haven't already)
 2. **Explore MAP.md** - Get familiar with your system's structure
 3. **Try the pre-built agents** - Ask navigator questions, run executor tasks
-4. **Pick a task** - Check TASK_CONTEXTS.md for quick wins
+4. **Pick a task** - Check TODO.md for quick wins
 
 ## Need Help?
 

@@ -103,7 +103,7 @@ npm link
 # Test CLI globally after linking
 atris
 atris init
-atris sync
+atris update
 ```
 
 ### Testing the CLI
@@ -112,8 +112,8 @@ atris sync
 cd /path/to/test/project
 atris init
 
-# Test sync command (updates atris.md to latest version)
-atris sync
+# Test update command (updates atris.md to latest version)
+atris update
 
 # View help
 atris
@@ -149,7 +149,7 @@ Located in `bin/atris.js:27-100`
 - Source file: `__dirname/../atris.md` (from package installation)
 - Target directory: `process.cwd()/atris/` (user's current directory)
 
-### Command: `atris sync`
+### Command: `atris update`
 Located in `bin/atris.js:102-132`
 
 **Behavior:**
@@ -188,7 +188,7 @@ Located in root: `atris.md:1-276`
 - `bin/atris.js:1-133` - Complete CLI implementation
   - `bin/atris.js:17-25` - Command routing logic
   - `bin/atris.js:27-100` - init command implementation
-  - `bin/atris.js:102-132` - sync command implementation
+  - `bin/atris.js:102-132` - update command implementation
 - `atris.md:1-276` - Complete ATRIS specification
   - `atris.md:11-44` - Phase 1 (MAP.md generation)
   - `atris.md:46-127` - Phase 2 (3 agent specs)
@@ -203,12 +203,12 @@ Located in root: `atris.md:1-276`
 - Keep it dependency-free (no npm packages beyond Node.js built-ins)
 - Preserve the CLI UX: simple commands, clear output with ✓/✗ symbols
 - Maintain the folder structure contract (atris/agent_team/)
-- Test both `init` and `sync` commands after changes
+- Test both `init` and `update` commands after changes
 
 ### When Updating atris.md Spec
 - Update version in header (currently v1.1.0)
 - Increment package.json version
-- Run `atris sync` in test projects to verify sync functionality
+- Run `atris update` in test projects to verify sync functionality
 - Ensure backward compatibility with existing generated artifacts
 
 ### When Adding New Commands

@@ -57,7 +57,7 @@ You can also run:
 atris activate
 ```
 
-This shows today's journal, MAP.md, and TASK_CONTEXTS.md so you can browse and take notes offline. Authentication and agent selection are only required when you want to use `atris chat` with Atris cloud agents.
+This shows today's journal, MAP.md, and TODO.md so you can browse and take notes offline. Authentication and agent selection are only required when you want to use `atris chat` with Atris cloud agents.
 
 ## Try the autopilot loop (optional)
 
@@ -114,7 +114,7 @@ Your quality gatekeeper. Runs after changes to:
 - Run tests and type checks
 - Report risks
 
-### TASK_CONTEXTS.md
+### TODO.md
 Auto-generated task bank with:
 - Task complexity (Trivial → Epic)
 - Exact file:line references
@@ -135,7 +135,7 @@ Once the files are populated, you can interact with your agents:
 
 **Give tasks to the executor:**
 ```
-@executor add rate limiting to the API (see TASK_CONTEXTS.md T-005)
+@executor add rate limiting to the API (see TODO.md T-005)
 ```
 
 **Validate changes:**
@@ -159,7 +159,7 @@ This syncs your local `atris.md` and agent templates to the latest version. Re-r
 1. **Let your AI agent generate MAP.md** (Step 2 above if you haven't already)
 2. **Explore MAP.md** - Get familiar with your system's structure
 3. **Try the pre-built agents** - Ask navigator questions, run executor tasks
-4. **Pick a task** - Check TASK_CONTEXTS.md for quick wins
+4. **Pick a task** - Check TODO.md for quick wins
 
 ## Need Help?
 

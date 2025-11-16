@@ -99,7 +99,7 @@ Delete when done. Clean workspace = clear mind.
 
 ## Collaboration
 
-**Trust the system.** MAP.md is truth. TASK_CONTEXTS.md is current work.
+**Trust the system.** MAP.md is truth. TODO.md is current work (formerly `TASK_CONTEXTS.md`).
 
 Navigator finds, executor builds, validator verifies. Stay in your lane.
 
@@ -125,7 +125,7 @@ Mistakes are fine if you learn and fix quickly.
 
 ❌ Make assumptions without checking MAP.md
 
-❌ Leave TODOs scattered in code (put them in TASK_CONTEXTS.md)
+❌ Leave TODOs scattered in code (put them in TODO.md)
 
 ❌ Overthink simple problems
 

@@ -10,12 +10,17 @@ function statusAtris(isQuick = false) {
     process.exit(1);
   }
 
-  // Read TASK_CONTEXTS.md for backlog and in-progress tasks
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  // Read TODO.md (or legacy TASK_CONTEXTS.md) for backlog and in-progress tasks
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
   let backlogTasks = [];
   let inProgressTasks = [];
-  if (fs.existsSync(taskContextsFile)) {
-    const taskContent = fs.readFileSync(taskContextsFile, 'utf8');
+  const taskFilePath = fs.existsSync(todoFile)
+    ? todoFile
+    : (fs.existsSync(legacyTaskContextsFile) ? legacyTaskContextsFile : null);
+
+  if (taskFilePath && fs.existsSync(taskFilePath)) {
+    const taskContent = fs.readFileSync(taskFilePath, 'utf8');
 
     // Extract Backlog
     const backlogMatch = taskContent.match(/## Backlog\n([\s\S]*?)(?=\n##|$)/);

@@ -108,21 +108,31 @@ function showHelp() {
   console.log('  init       - Initialize ATRIS in current project');
   console.log('  update     - Update local files to latest version');
   console.log('');
-  console.log('Daily workflow:');
-  console.log('  brainstorm - Explore ideas conversationally (optional)');
+  console.log('Core workflow:');
   console.log('  plan       - Create build spec with visualization');
   console.log('  do         - Execute tasks');
-  console.log('  review     - Validate work (2-pass with auto-fix)');
+  console.log('  review     - Validate work (tests, safety checks, docs)');
+  console.log('');
+  console.log('Context & tracking:');
   console.log('  log        - Add ideas to inbox');
   console.log('  status     - See active work and completions');
+  console.log('  analytics  - Show recent productivity from journals');
+  console.log('');
+  console.log('Optional helpers:');
+  console.log('  brainstorm - Explore ideas conversationally before planning');
+  console.log('  visualize  - Legacy visualization helper (prefer "atris plan")');
   console.log('');
   console.log('Quick commands:');
   console.log('  atris      - Load context and start (natural language)');
   console.log('');
-  console.log('Other:');
+  console.log('Cloud & agents:');
+  console.log('  agent      - Select which Atris agent to use');
+  console.log('  chat       - Chat with the selected Atris agent');
   console.log('  login      - Authenticate with Atris cloud (optional)');
   console.log('  logout     - Remove credentials');
   console.log('  whoami     - Show auth status');
+  console.log('');
+  console.log('Other:');
   console.log('  version    - Show ATRIS version');
   console.log('  help       - Show this help');
   console.log('');
@@ -210,6 +220,9 @@ if (command === 'init') {
 } else if (command === 'whoami') {
   whoamiCmd();
 } else if (command === 'visualize') {
+  console.log('ℹ️  "atris visualize" is a legacy helper. Visualization is now built into "atris plan".');
+  console.log('   Prefer: atris plan');
+  console.log('');
   visualizeCmd();
 } else if (command === 'brainstorm') {
   brainstormCmd()
@@ -1945,7 +1958,7 @@ async function atrisDevEntry(userInput = null) {
   }
   console.log('   NEW feature → atris/features/[name]/idea.md + build.md');
   console.log('   EXISTING → Update that feature\'s docs');
-  console.log('   SIMPLE → TASK_CONTEXTS.md only');
+  console.log('   SIMPLE → TODO.md only');
   console.log('');
   console.log('STEP 3: Create/update docs');
   console.log('   idea.md = intent (any format)');
@@ -1969,8 +1982,9 @@ function launchAtris() {
   // Read launcher.md
   const launcherSpec = fs.readFileSync(launcherFile, 'utf8');
 
-  // Reference TASK_CONTEXTS.md (agents read on-demand)
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  // Reference TODO.md (agents read on-demand, legacy TASK_CONTEXTS.md supported)
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
 
   // Reference MAP.md (agents read on-demand)
   const mapFile = path.join(targetDir, 'MAP.md');
@@ -1994,8 +2008,11 @@ function launchAtris() {
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  const taskContextsPath = fs.existsSync(taskContextsFile) ? path.relative(process.cwd(), taskContextsFile) : null;
-  console.log('📝 TASK_CONTEXTS.md: ' + (taskContextsPath || 'Not found'));
+  const taskFilePath = fs.existsSync(todoFile)
+    ? todoFile
+    : (fs.existsSync(legacyTaskContextsFile) ? legacyTaskContextsFile : null);
+  const taskContextsPath = taskFilePath ? path.relative(process.cwd(), taskFilePath) : null;
+  console.log('📝 TODO.md: ' + (taskContextsPath || 'Not found'));
   console.log('   Read for completed tasks context (usually small, or reference path if large).');
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');

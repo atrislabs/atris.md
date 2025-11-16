@@ -50,6 +50,17 @@
 
 ---
 
+### L5: Centering a Small, Clear CLI Loop Improves Adoption
+**Context:** CLI UX simplification — clarified `plan`, `do`, `review` as the core workflow and aligned docs around `TODO.md` + features + logs.
+
+**Lesson:** When the CLI surfaces one obvious loop and keeps other commands clearly secondary, it becomes much easier for both humans and agents to adopt and remember. A simple, repeatable path beats a large catalog of options.
+
+**Pattern:** Small, opinionated core loops > broad command surfaces. Promote the main workflow, demote helpers.
+
+**Impact:** New users can understand how to use ATRIS in seconds, and coding agents can reliably script the workflow without extensive per-project instructions.
+
+---
+
 ## Future Sessions
 
 Format:

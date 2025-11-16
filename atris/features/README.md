@@ -89,6 +89,15 @@ Conversational exploration mode for uncertain ideas
 - **Why:** Users need supportive thinking partner when uncertain about requirements
 - **Completed:** 2025-11-11 (shipped in v2.0.0)
 
+#### cli-ux-simplification — v2.0.0
+Simplified CLI surface around the core workflow and aligned internal artifacts.
+- **Files:** bin/atris.js, commands/init.js, commands/workflow.js, commands/status.js, commands/brainstorm.js, lib/state-detection.js, atris.md, atris/atris.md, GETTING_STARTED.md, atris/GETTING_STARTED.md, AGENT.md, CLAUDE.md, atris/PERSONA.md, PERSONA.md
+- **Status:** complete
+- **Keywords:** cli, ux, plan-do-review, todo, features
+- **What:** Clarified help output and behavior so `plan`, `do`, and `review` are the primary loop, with `TODO.md` + features + logs as the underlying structure.
+- **Why:** Makes it easier for humans and agents to understand and consistently use the CLI without memorizing many commands.
+- **Completed:** 2025-11-16
+
 ---
 
 ## Guidelines
@@ -99,7 +108,7 @@ Conversational exploration mode for uncertain ideas
 - Needs design discussion
 - Will take multiple sessions
 
-**When to use TASK_CONTEXTS.md instead:**
+**When to use TODO.md instead:**
 - Simple tasks (1-2 files)
 - Quick fixes
 - Refactoring

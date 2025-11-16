@@ -35,11 +35,15 @@ async function planAtris() {
     }
   }
 
-  // Read TASK_CONTEXTS.md for current state
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  // Read TODO.md (or legacy TASK_CONTEXTS.md) for current state
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
   let taskContexts = '';
-  if (fs.existsSync(taskContextsFile)) {
-    taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
+  const taskFilePath = fs.existsSync(todoFile)
+    ? todoFile
+    : (fs.existsSync(legacyTaskContextsFile) ? legacyTaskContextsFile : null);
+  if (taskFilePath) {
+    taskContexts = fs.readFileSync(taskFilePath, 'utf8');
   }
 
   // Detect uncertainty in inbox context
@@ -82,7 +86,7 @@ async function planAtris() {
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('📝 CURRENT TASK_CONTEXTS.md:');
+  console.log('📝 CURRENT TODO.md:');
   console.log('─────────────────────────────────────────────────────────────');
   console.log(taskContexts);
   console.log('');
@@ -107,7 +111,7 @@ async function planAtris() {
   console.log('   Options:');
   console.log('   A) Create NEW feature folder: atris/features/[name]/');
   console.log('   B) Update EXISTING feature: atris/features/[existing-name]/');
-  console.log('   C) Simple task: Just update TASK_CONTEXTS.md');
+  console.log('   C) Simple task: Just update TODO.md');
   console.log('');
   console.log('   Check atris/features/ to see existing features.');
   console.log('   If this is small/simple, suggest option C.');
@@ -128,7 +132,7 @@ async function planAtris() {
   console.log('     - Update atris/features/README.md status');
   console.log('');
   console.log('   If SIMPLE task (option C):');
-  console.log('     - Add task to TASK_CONTEXTS.md Backlog section');
+  console.log('     - Add task to TODO.md Backlog section');
   console.log('');
   console.log('⛔ DO NOT execute the build — that\'s for "atris do" (executor agent)');
   console.log('');
@@ -177,7 +181,7 @@ async function planAtris() {
     }
     
     if (taskContexts) {
-      userPrompt += `## CURRENT TASK_CONTEXTS.md:\n${taskContexts}\n\n`;
+      userPrompt += `## CURRENT TODO.md:\n${taskContexts}\n\n`;
     }
     
     userPrompt += `Your job (execute these steps):\n\n`;
@@ -189,7 +193,7 @@ async function planAtris() {
     userPrompt += `   - Include file:line references from MAP.md\n`;
     userPrompt += `   - List dependencies between tasks\n`;
     userPrompt += `   - Add acceptance criteria for each task\n\n`;
-    userPrompt += `STEP 3: Write tasks to TASK_CONTEXTS.md\n`;
+    userPrompt += `STEP 3: Write tasks to TODO.md\n`;
     userPrompt += `   - Add tasks to Backlog section\n`;
     userPrompt += `   - Format: Task number, description, file refs, acceptance criteria\n`;
     userPrompt += `   - Quality over speed - tasks must be perfect for systems player execution\n\n`;
@@ -309,16 +313,20 @@ async function doAtris() {
   const mapFile = path.join(targetDir, 'MAP.md');
   const mapPath = fs.existsSync(mapFile) ? path.relative(process.cwd(), mapFile) : null;
 
-  // Load tasks from TASK_CONTEXTS.md (generic - no hardcoded paths)
+  // Load tasks from TODO.md (generic - no hardcoded paths, legacy TASK_CONTEXTS.md supported)
   let tasksContent = '';
   let taskSource = '';
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
-  if (fs.existsSync(taskContextsFile)) {
-    tasksContent = fs.readFileSync(taskContextsFile, 'utf8');
-    taskSource = 'atris/TASK_CONTEXTS.md';
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  const taskFilePath = fs.existsSync(todoFile)
+    ? todoFile
+    : (fs.existsSync(legacyTaskContextsFile) ? legacyTaskContextsFile : null);
+  if (taskFilePath) {
+    tasksContent = fs.readFileSync(taskFilePath, 'utf8');
+    taskSource = fs.existsSync(todoFile) ? 'atris/TODO.md' : 'atris/TASK_CONTEXTS.md';
   }
   
-  // Extract tasks from TASK_CONTEXTS.md (no tag filtering - all tasks available)
+  // Extract tasks from TODO.md (no tag filtering - all tasks available)
   const taskTag = '';
   let filteredTasks = '';
   if (taskTag && tasksContent) {
@@ -353,10 +361,10 @@ async function doAtris() {
     filteredTasks = tasksContent;
   }
   
-  // Load TASK_CONTEXTS.md content (using existing taskContextsFile variable)
+  // Load TODO.md content (using existing task file variable)
   let taskContexts = '';
-  if (fs.existsSync(taskContextsFile)) {
-    taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
+  if (taskFilePath && fs.existsSync(taskFilePath)) {
+    taskContexts = fs.readFileSync(taskFilePath, 'utf8');
   }
   
   // Build super prompt
@@ -395,7 +403,7 @@ async function doAtris() {
   
   if (taskContexts && taskContexts.trim()) {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-    console.log('📝 TASK_CONTEXTS.md (Additional Context)');
+    console.log('📝 TODO.md (Additional Context)');
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log(taskContexts);
   console.log('');
@@ -424,8 +432,8 @@ async function doAtris() {
   console.log('     - Execute step-by-step exactly as written');
   console.log('     - Update status in atris/features/README.md as you progress');
   console.log('');
-  console.log('STEP 2: If no feature folders, check TASK_CONTEXTS.md');
-  console.log('   Look in atris/TASK_CONTEXTS.md Backlog section');
+  console.log('STEP 2: If no feature folders, check TODO.md');
+  console.log('   Look in atris/TODO.md Backlog section');
   console.log('   Claim a task (move to In Progress with timestamp)');
   console.log('   Execute the task');
   console.log('   Move to Completed when done');
@@ -438,7 +446,7 @@ async function doAtris() {
   console.log('');
   console.log('STEP 4: After completion');
   console.log('   If feature: Update atris/features/README.md → status: "complete"');
-  console.log('   If task: Move to TASK_CONTEXTS.md Completed section');
+  console.log('   If task: Move to TODO.md Completed section');
   console.log('');
   console.log('⛔ DO NOT plan or design — just execute what\'s already written');
   console.log('');
@@ -478,18 +486,18 @@ async function doAtris() {
     if (filteredTasks) {
       userPrompt += `## TASKS TO EXECUTE (from ${taskSource}):\n${filteredTasks}\n\n`;
     } else {
-      userPrompt += `## TASKS TO EXECUTE:\n(No tasks found - check TASK_CONTEXTS.md)\n\n`;
+      userPrompt += `## TASKS TO EXECUTE:\n(No tasks found - check TODO.md)\n\n`;
     }
     
     if (taskContexts) {
-      userPrompt += `## TASK_CONTEXTS.md (Additional Context):\n${taskContexts}\n\n`;
+      userPrompt += `## TODO.md (Additional Context):\n${taskContexts}\n\n`;
     }
     
     userPrompt += `Your process (EXECUTE these steps):\n`;
-    userPrompt += `1. Read tasks from TASK_CONTEXTS.md (shown above)\n`;
+    userPrompt += `1. Read tasks from TODO.md (shown above)\n`;
     userPrompt += `2. For each task: Show ASCII visualization first (especially complex changes)\n`;
     userPrompt += `3. Execute task: Use file edit tools, terminal commands, etc.\n`;
-    userPrompt += `4. After completion: Move task to TASK_CONTEXTS.md <completed> section\n`;
+    userPrompt += `4. After completion: Move task to TODO.md <completed> section\n`;
     userPrompt += `5. Follow PERSONA.md for communication style\n`;
     userPrompt += `6. Use MAP.md to navigate codebase\n\n`;
     userPrompt += `DO NOT just describe what you would do - actually edit files and execute commands!\n`;
@@ -589,11 +597,15 @@ async function reviewAtris() {
     }
   }
 
-  // Read TASK_CONTEXTS.md
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  // Read TODO.md (or legacy TASK_CONTEXTS.md)
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
   let taskContexts = '';
-  if (fs.existsSync(taskContextsFile)) {
-    taskContexts = fs.readFileSync(taskContextsFile, 'utf8');
+  const taskFilePath = fs.existsSync(todoFile)
+    ? todoFile
+    : (fs.existsSync(legacyTaskContextsFile) ? legacyTaskContextsFile : null);
+  if (taskFilePath) {
+    taskContexts = fs.readFileSync(taskFilePath, 'utf8');
   }
 
   // Read journal for timestamp context
@@ -625,7 +637,7 @@ async function reviewAtris() {
     console.log('─────────────────────────────────────────────────────────────');
   }
   console.log('');
-  console.log('📝 TASK_CONTEXTS.md:');
+  console.log('📝 TODO.md:');
   console.log('─────────────────────────────────────────────────────────────');
   console.log(taskContexts);
   console.log('');
@@ -655,7 +667,7 @@ async function reviewAtris() {
   console.log('  • Verify everything works');
   console.log('  • Test thoroughly (unless user says no)');
   console.log('  • Update docs if needed');
-  console.log('  • Clean TASK_CONTEXTS.md (move completed tasks)');
+  console.log('  • Clean TODO.md (move completed tasks)');
   console.log('  • Extract learnings for journal');
   console.log('  • Only approve when truly ready for human testing');
   console.log('');
@@ -703,14 +715,14 @@ async function reviewAtris() {
     userPrompt += `  5. Repeat until: "✅ All good. Ready for human testing."\n\n`;
     
     if (taskContexts) {
-      userPrompt += `## TASK_CONTEXTS.md:\n${taskContexts}\n\n`;
+      userPrompt += `## TODO.md:\n${taskContexts}\n\n`;
     }
     
     userPrompt += `Your job:\n`;
     userPrompt += `  • Verify everything works\n`;
     userPrompt += `  • Test thoroughly (unless user says no)\n`;
-    userPrompt += `  • Update docs if needed (MAP.md, TASK_CONTEXTS.md)\n`;
-    userPrompt += `  • Clean TASK_CONTEXTS.md (move completed tasks to Completed section, then delete)\n`;
+    userPrompt += `  • Update docs if needed (MAP.md, TODO.md)\n`;
+    userPrompt += `  • Clean TODO.md (move completed tasks to Completed section, then delete)\n`;
     userPrompt += `  • Extract learnings for journal\n`;
     userPrompt += `  • Only approve when truly ready for human testing\n\n`;
     userPrompt += `The cycle: do → review → [issues] → do → review → ✅ Ready\n`;

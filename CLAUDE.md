@@ -10,11 +10,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working on the 
 
 2. **Execute first, research only if needed** — Run commands/tools directly. Don't search docs first—see what happens, then investigate if it fails. Saves context.
 
-3. **Load context** — Run `atris activate` to load your journal, MAP.md (navigation), and TASK_CONTEXTS.md (current work). No login required.
+3. **Load context** — Run `atris activate` to load your journal, MAP.md (navigation), and TODO.md (current work). No login required.
 
 4. **Find what you need** — Always reference `atris/MAP.md` before making changes. It has exact file:line references for every component.
 
-5. **Claim and complete tasks** — Check `atris/TASK_CONTEXTS.md`, claim a task, build it, then delete it when done (validator cleans up the final state).
+5. **Claim and complete tasks** — Check `atris/TODO.md`, claim a task, build it, then delete it when done (validator cleans up the final state).
 
 6. **Use the agent workflow** — Navigator (plan) → Executor (build) → Validator (review). Each has specific responsibilities in `atris/agent_team/`.
 
@@ -52,7 +52,7 @@ ATRIS is a Node.js CLI package (v1.5.5) that transforms codebases into AI-naviga
 **atris.md** (master spec in root) — The blueprint. Copied to user projects as `atris/atris.md`. Defines:
 - Phase 1: MAP.md generation rules
 - Phase 2: Navigator/executor/validator agent specs
-- Phase 3: TASK_CONTEXTS.md structure
+- Phase 3: TODO.md structure (task context system, formerly `TASK_CONTEXTS.md`)
 - Phase 4: Activation & validation checklists
 - Phase 5: Future roadmap (sync, crew orchestration)
 
@@ -63,7 +63,7 @@ ATRIS is a Node.js CLI package (v1.5.5) that transforms codebases into AI-naviga
 - Critical files marked ⭐
 - Entry points and architecture flows
 
-**atris/TASK_CONTEXTS.md** (task bank) — AI-generated from MAP.md insights. Format:
+**atris/TODO.md** (task bank, formerly `TASK_CONTEXTS.md`) — AI-generated from MAP.md insights. Format:
 - **Backlog** — Unclaimed tasks ready for work
 - **In Progress** — Tasks claimed with "Claimed by: [Name] at [Time]"
 - Target state: 0 (all tasks deleted after completion by validator)
@@ -113,7 +113,7 @@ The spec in `atris.md` gets copied to user projects as `atris/atris.md`. Changes
 
 1. **Edit the spec** — Update `atris.md` with new phases, agent specs, or instructions
 2. **Bump version in package.json** — Increment patch/minor/major as appropriate
-3. **Test with `atris sync`** — Users will pull updates with this command
+3. **Test with `atris update`** — Users will pull updates with this command
 4. **Ensure backward compatibility** — Old projects should still work with new spec
 
 ### Updating Agent Templates

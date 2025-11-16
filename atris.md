@@ -2,7 +2,7 @@
 
 > **Drop this markdown file anywhere. Scaffold and operate an AI agent team.**
 
-This spec defines how to transform any system (codebase, product, sales process, research) into a self-documenting, AI-navigable workspace. Standard structure: `atris/` folder with MAP.md, agent_team/, and TASK_CONTEXTS.md.
+This spec defines how to transform any system (codebase, product, sales process, research) into a self-documenting, AI-navigable workspace. Standard structure: `atris/` folder with MAP.md, agent_team/, and TODO.md.
 
 **Workflow:** Daily logs → Navigator plans → Executor builds → Validator reviews.
 
@@ -36,7 +36,7 @@ This spec defines how to transform any system (codebase, product, sales process,
 
 4. **DO NOT include this:**
    - COMPLEX Architecture Flows unless specified (keep it simple to understand)
-   - TODOs/Improvements (those go in TASK_CONTEXTS.md)
+   - TODOs/Improvements (those go in TODO.md)
    - Project stats (unnecessary metadata)
 
 5. **Quality Checklist Before Outputting:**
@@ -116,7 +116,7 @@ ATRIS ships with pre-built agent templates in `/atris/agent_team/` (copied durin
   - Ignore type errors or test failures
   ```
 
-- **Knowledge Base:** MAP.md, TASK_CONTEXTS.md (generated), test suite, type definitions
+- **Knowledge Base:** MAP.md, TODO.md (generated), test suite, type definitions
 - **Success Metric:** Tasks completed 95% first-try with zero regressions
 
 ### Agent 3: **validator.md** (in `/atris/agent_team/`)
@@ -146,7 +146,7 @@ ATRIS ships with pre-built agent templates in `/atris/agent_team/` (copied durin
 
 ---
 
-## Phase 3: Task Context System (TASK_CONTEXTS.md in `/atris/`)
+## Phase 3: Task Context System (TODO.md in `/atris/`, formerly `TASK_CONTEXTS.md`)
 
 **Goal:** Automatic task extraction with exact file/component context, so agents never guess.
 
@@ -216,7 +216,7 @@ ATRIS ships with pre-built agent templates in `/atris/agent_team/` (copied durin
    - Include both quick wins (low-risk) and strategic work (high-impact)
    - Map all dependencies explicitly
 
-3. Output: `/atris/TASK_CONTEXTS.md` (maintains and evolves as system changes)
+3. Output: `/atris/TODO.md` (maintains and evolves as system changes)
 
 4. On each MAP.md update, regenerate TASK_CONTEXTS.md to reflect new state
 
@@ -233,7 +233,7 @@ ATRIS ships with pre-built agent templates in `/atris/agent_team/` (copied durin
 - ✅ `agent_team/executor.md` (pre-built template)
 - ✅ `agent_team/validator.md` (pre-built template)
 - ⏳ `MAP.md` (AI agent generates from codebase)
-- ⏳ `TASK_CONTEXTS.md` (AI agent generates from MAP)
+- ⏳ `TODO.md` (AI agent generates from MAP)
 
 **Agent Enhancement:**
 After MAP.md generation, agents receive project context injection (framework, key dirs, search patterns). This keeps base templates clean while adding project-specific accelerators.
@@ -263,7 +263,7 @@ After MAP.md generation, agents receive project context injection (framework, ke
 
 1. **Brain Dump** — Run `atris log`, type thoughts into `## Inbox` section (unfiltered, no structure required)
 
-2. **Navigator Reviews** — Processes inbox entries, identifies patterns, creates tasks in TASK_CONTEXTS.md with MAP.md context
+2. **Navigator Reviews** — Processes inbox entries, identifies patterns, creates tasks in TODO.md with MAP.md context
 
 3. **Executor Builds** — Takes task → ASCII visualization → get approval → build step-by-step → validate alignment
 
@@ -468,7 +468,7 @@ Enhanced sync logic with auto-pull and conflict resolution.
 
 ## Phase 5.2: atrisDev Protocol (Universal Workflow)
 
-**The atrisDev Protocol** is a universal workflow that any coding agent can follow to produce high-quality output. When agents follow this protocol, they build features systematically with human approval gates and proper documentation.
+**The atrisDev Protocol** is a universal workflow that any coding agent can follow to produce high-quality output. When agents follow this protocol, they build features systematically with human approval gates and proper documentation, using small, low-risk changes that compound over time.
 
 **This protocol works with ANY agent:** Claude Code, Cursor, Windsurf, GitHub Copilot, or any LLM-based coding assistant.
 
@@ -495,6 +495,14 @@ The agent executes this workflow:
 ---
 
 ### atrisDev Workflow Steps
+
+**0. (Optional) Explore the Idea**
+
+If requirements are unclear, use `atris brainstorm` (or a structured conversation) to explore the problem and possible approaches *before* committing to any plan:
+
+- Clarify the problem, constraints, and “what good looks like”.
+- Decide whether this should become a feature folder (`atris/features/[name]/`) or a small, direct TODO.
+- Capture the refined idea into `atris/features/[name]/idea.md` once it is clear enough.
 
 **1. Show atris Visualization**
 
@@ -610,9 +618,9 @@ Contents:
 - [ ] **Install:** `npm install -g atris` (instant)
 - [ ] **Init:** `atris init` - creates atris/ with templates (instant)
 - [ ] **Phase 1:** AI agent generates MAP.md from codebase (5 min)
-- [ ] **Phase 3:** AI agent generates TASK_CONTEXTS.md from MAP (2 min)
+- [ ] **Phase 3:** AI agent generates TODO.md from MAP (2 min)
 - [ ] **Validate:** Test navigator/executor/validator workflows (1 min)
-- [ ] **Ongoing:** Run `atris sync` to get template updates
+- [ ] **Ongoing:** Run `atris update` to get template updates
 
 **Total time to full instrumentation: ~8 minutes**
 
@@ -631,11 +639,11 @@ atris init
 # Hand atris/atris.md to your AI agent with this prompt:
 # "Read atris/atris.md. Execute Phase 1-4 to scaffold this system."
 
-# Agent generates MAP.md, agent_team/, and TASK_CONTEXTS.md in atris/
+# Agent generates MAP.md, agent_team/, and TODO.md in atris/
 # Your system is now fully instrumented for AI collaboration
 
 # Keep atris.md updated
-atris sync
+atris update
 ```
 
 ---
@@ -643,7 +651,7 @@ atris sync
 **Status:** Production ready. Run `atris init` in any project to get:
 1. Pre-built agent templates (navigator, executor, validator)
 2. AI generates MAP.md from your codebase in <5 minutes
-3. AI generates TASK_CONTEXTS.md with exact file:line context
+3. AI generates TODO.md with exact file:line context
 4. Full workflow: activate → plan → build → validate
 
 *Install once. Init anywhere. AI agents have instant context. Codebase becomes fully instrumented for AI collaboration.*

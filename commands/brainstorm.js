@@ -327,7 +327,8 @@ function generateWorkflowFile(workflowFile, metadata) {
   const launcherFile = path.join(targetDir, 'agent_team', 'launcher.md');
   const personaFile = path.join(targetDir, 'PERSONA.md');
   const mapFile = path.join(targetDir, 'MAP.md');
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
   const { logFile } = getLogPath();
   
   const workflow = {
@@ -346,24 +347,24 @@ function generateWorkflowFile(workflowFile, metadata) {
         agentSpec: fs.existsSync(navigatorFile) ? fs.readFileSync(navigatorFile, 'utf8') : '',
         context: {
           inboxPath: metadata.logFile,
-          taskContextsPath: 'atris/TASK_CONTEXTS.md',
+          taskContextsPath: 'atris/TODO.md',
           mapPath: 'atris/MAP.md'
         },
-        instructions: 'Take ideas from Inbox → break them down into perfect, manageable tasks. Create visualizations (ASCII diagrams) for logic flows, DB tables, architecture, UI/UX. Write tasks to TASK_CONTEXTS.md.'
+        instructions: 'Take ideas from Inbox → break them down into perfect, manageable tasks. Create visualizations (ASCII diagrams) for logic flows, DB tables, architecture, UI/UX. Write tasks to TODO.md (formerly TASK_CONTEXTS.md).'
       },
       EXECUTOR: {
         agentSpec: fs.existsSync(executorFile) ? fs.readFileSync(executorFile, 'utf8') : '',
         context: {
           personaPath: 'atris/PERSONA.md',
           mapPath: 'atris/MAP.md',
-          taskContextsPath: 'atris/TASK_CONTEXTS.md'
+          taskContextsPath: 'atris/TODO.md'
         },
         instructions: 'Get it done, precisely, following instructions perfectly. Show ASCII visualization for complex changes. Execute tasks following executor spec. Move completed tasks to <completed> section.'
       },
       VALIDATOR: {
         agentSpec: fs.existsSync(validatorFile) ? fs.readFileSync(validatorFile, 'utf8') : '',
         context: {
-          taskContextsPath: 'atris/TASK_CONTEXTS.md',
+          taskContextsPath: 'atris/TODO.md',
           mapPath: 'atris/MAP.md',
           journalPath: metadata.logFile
         },
@@ -372,7 +373,7 @@ function generateWorkflowFile(workflowFile, metadata) {
       LAUNCHER: {
         agentSpec: fs.existsSync(launcherFile) ? fs.readFileSync(launcherFile, 'utf8') : '',
         context: {
-          taskContextsPath: 'atris/TASK_CONTEXTS.md',
+          taskContextsPath: 'atris/TODO.md',
           mapPath: 'atris/MAP.md',
           journalPath: metadata.logFile
         },
@@ -401,13 +402,17 @@ function updateWorkflowState(workflowFile, stateName, iteration) {
   
   // Update context with latest file contents
   const targetDir = path.join(process.cwd(), 'atris');
-  const taskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskContextsFile = path.join(targetDir, 'TASK_CONTEXTS.md');
   const mapFile = path.join(targetDir, 'MAP.md');
   const { logFile } = getLogPath();
   
-  // Refresh task contexts if exists
-  if (fs.existsSync(taskContextsFile)) {
-    workflow.states[stateName].context.taskContexts = fs.readFileSync(taskContextsFile, 'utf8').substring(0, 5000); // Limit size
+  // Refresh task contexts if exists (prefer TODO.md, fallback to legacy TASK_CONTEXTS.md)
+  const taskFilePath = fs.existsSync(todoFile)
+    ? todoFile
+    : (fs.existsSync(legacyTaskContextsFile) ? legacyTaskContextsFile : null);
+  if (taskFilePath) {
+    workflow.states[stateName].context.taskContexts = fs.readFileSync(taskFilePath, 'utf8').substring(0, 5000); // Limit size
   }
   
   // Reference map path (agents read on-demand)
