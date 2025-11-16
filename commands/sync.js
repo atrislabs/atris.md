@@ -50,6 +50,14 @@ function syncAtris() {
     updated++;
   });
 
+  // Migrate legacy TASK_CONTEXTS.md → TODO.md if needed
+  const todoFile = path.join(targetDir, 'TODO.md');
+  const legacyTaskFile = path.join(targetDir, 'TASK_CONTEXTS.md');
+  if (!fs.existsSync(todoFile) && fs.existsSync(legacyTaskFile)) {
+    fs.renameSync(legacyTaskFile, todoFile);
+    console.log('✓ Migrated TASK_CONTEXTS.md to TODO.md');
+  }
+
   if (updated === 0) {
     console.log('✓ Already up to date');
   } else {

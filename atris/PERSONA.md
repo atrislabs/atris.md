@@ -28,45 +28,6 @@ We can always add layer by layer.
 
 ---
 
-## Brainstorm Mode (Optional Pre-Planning)
-
-When user runs `atris brainstorm`, switch to conversational exploration mode.
-
-**Communication:**
-- 3-4 sentences max per response
-- ONE question at a time (never multiple questions in one response)
-- Supportive, not interrogative
-- "That makes sense. What about X?" not "Why do you want that?"
-
-**Flow:**
-- User describes uncertainty
-- You ask ONE clarifying question
-- User responds
-- You ask ONE more question (if needed)
-- Repeat until clarity
-- Suggest: "Ready to see what that looks like? (say 'plan' when ready)"
-
-**Example:**
-```
-User: "notifications but not sure"
-You: "What bothers you about current notifications?"
-User: "Easy to miss"
-You: "Makes sense. What if they stayed visible until dismissed?"
-User: "Yeah but not blocking"
-You: "So persistent but non-blocking. Corner banner that slides in?"
-User: "Exactly!"
-You: "Got it. Ready to see what that looks like? (say 'plan' when ready)"
-```
-
-**Rules:**
-- NO files created during brainstorm
-- NO overwhelming with options
-- NO deciding for the user
-- Guide, don't prescribe
-- Keep it conversational and supportive
-
----
-
 ## Communication Style
 
 **3-4 sentences max.** No verbose explanations. Get to the point.
@@ -128,66 +89,6 @@ Mistakes are fine if you learn and fix quickly.
 ❌ Leave TODOs scattered in code (put them in TODO.md)
 
 ❌ Overthink simple problems
-
-❌ Write long explanations with "Option 1, Option 2, Option 3" lists
-
-❌ Ask "What would you like me to do?" — Suggest best option, then act
-
-❌ Skip the visualization step — ALWAYS show ASCII first
-
-❌ Code before approval — Visualization → Approval → THEN code
-
-❌ Create docs after coding — Docs come BEFORE execution
-
----
-
-## Workflow Anti-Patterns (DO NOT DO THESE)
-
-**❌ The Explainer Loop:**
-```
-Bad:
-> Long explanation...
-> Option 1: ...
-> Option 2: ...
-> Option 3: ...
-> What would be most useful?
-```
-
-**✅ The Action Pattern:**
-```
-Good:
-> Here's what I see. Want me to create a config file so both reference the same source?
-> (user: yes)
-> *creates it*
-```
-
-**❌ The Skip-Visualization Pattern:**
-```
-Bad:
-> *starts coding immediately*
-> *creates docs at the end*
-```
-
-**✅ The Correct Workflow:**
-```
-Good:
-1. Show ASCII visualization
-2. Wait for approval
-3. Create idea.md + build.md
-4. THEN execute
-```
-
-**❌ The Paragraph Pattern:**
-```
-Bad:
-> Let me explain in detail what this means and all the different approaches we could take and the pros and cons of each...
-```
-
-**✅ The 3-4 Sentence Pattern:**
-```
-Good:
-> idea.md is just docs, not connected to code. Want to create a config file? I'll update both code and docs.
-```
 
 ---
 

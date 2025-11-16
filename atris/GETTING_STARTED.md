@@ -1,6 +1,6 @@
-# Getting Started with ATRIS
+# Getting Started with atrisDev
 
-Welcome! ATRIS transforms your system (codebase, product, sales process, etc.) into an AI-navigable workspace in under 10 minutes.
+Welcome! atrisDev gives you a high-quality AI development workflow that works with any coding agent.
 
 ## What Just Happened?
 
@@ -9,44 +9,49 @@ You ran `atris init` and got this folder structure:
 ```
 atris/
 ├── GETTING_STARTED.md (you are here!)
-├── PERSONA.md (agent communication style)
-├── atris.md (instructions for your AI agent)
-├── MAP.md (AI generates from your codebase)
-├── TODO.md (AI generates from MAP; formerly TASK_CONTEXTS.md)
-└── agent_team/
-    ├── navigator.md (pre-built template, ready to use)
-    ├── executor.md (pre-built template, ready to use)
-    └── validator.md (pre-built template, ready to use)
+├── atris.md (atrisDev protocol + specs)
+├── CLAUDE.md (tells agents to follow atrisDev)
+├── MAP.md (navigation - AI will generate)
+└── agent_team/ (agent specs)
 ```
 
-## Quick Start (3 Steps)
+## Quick Start (2 Steps)
 
-### Step 1: Open atris.md
-Open `atris/atris.md` in your editor. This file contains detailed instructions for your AI agent.
+### Step 1: Run atris
 
-### Step 2: Paste to Your AI Agent
-Copy the entire contents of `atris.md` and paste it to Claude Code, Cursor, Windsurf, or your favorite AI coding assistant with this prompt:
-
-```
-Read atris.md. Generate MAP.md and TODO.md for this project.
+```bash
+atris
 ```
 
-### Step 3: Watch the Magic
-Your AI agent will:
-- Scan your project and generate `MAP.md` (a navigation guide with file:line references)
-- Generate `TODO.md` with actionable tasks extracted from your system
-- Optionally inject project-specific context into the pre-built agent templates
+This loads your workspace context and activates the atrisDev protocol.
 
-**Agent templates ship ready to use:**
-- **navigator.md** - Answers "where is X?" questions
-- **executor.md** - Executes tasks with full context
-- **validator.md** - Validates changes and updates docs
+### Step 2: Describe what you want
 
-**Total time: ~5 minutes**
+In your coding agent (Claude Code, Cursor, Windsurf, etc.), just describe what you want to build:
 
-## Load the context (no login required)
+```
+"I want to add dark mode to the settings page"
+"Build a CSV export feature for the dashboard"
+"Refactor the auth system to use OAuth"
+```
 
-At any point—before or after your AI agent runs—you can load the local context with:
+The agent will:
+0. (Optional) Explore with you conversationally (`atris brainstorm`)
+1. Show you an **atris visualization** (diagram of the plan)
+2. Wait for your approval
+3. Create `atris/features/[name]/idea.md` + `build.md`
+4. Execute step by step
+5. Review and update docs (2-pass validation)
+
+💡 Tip: Use `atris brainstorm` if you're exploring options. Use `atris plan` when ready to build.
+
+**Total time: Start building immediately**
+
+## The atrisDev Protocol
+
+When agents see `atris/CLAUDE.md`, they automatically follow the atrisDev workflow. No manual setup needed.
+
+You can also run:
 
 ```bash
 atris activate
