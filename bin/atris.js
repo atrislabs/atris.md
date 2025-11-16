@@ -120,6 +120,7 @@ function showHelp() {
   console.log('');
   console.log('Optional helpers:');
   console.log('  brainstorm - Explore ideas conversationally before planning');
+  console.log('  autopilot  - Guided loop that can clarify TODOs and run plan → do → review');
   console.log('  visualize  - Legacy visualization helper (prefer "atris plan")');
   console.log('');
   console.log('Quick commands:');
@@ -141,7 +142,7 @@ function showHelp() {
 }
 
 // Check if this is a known command or natural language input
-const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'brainstorm', 'plan', 'do', 'review',
+const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'brainstorm', 'autopilot', 'plan', 'do', 'review',
                        'agent', 'chat', 'login', 'logout', 'whoami', 'update', 'version', 'help'];
 
 // If no command OR command is not recognized, treat as natural language
@@ -182,7 +183,7 @@ const { loginAtris: loginCmd, logoutAtris: logoutCmd, whoamiAtris: whoamiCmd } =
 const { showVersion: versionCmd } = require('../commands/version');
 const { planAtris: planCmd, doAtris: doCmd, reviewAtris: reviewCmd } = require('../commands/workflow');
 const { visualizeAtris: visualizeCmd } = require('../commands/visualize');
-const { brainstormAtris: brainstormCmd } = require('../commands/brainstorm');
+const { brainstormAtris: brainstormCmd, autopilotAtris: autopilotCmd } = require('../commands/brainstorm');
 const { statusAtris: statusCmd } = require('../commands/status');
 const { analyticsAtris: analyticsCmd } = require('../commands/analytics');
 
@@ -224,6 +225,18 @@ if (command === 'init') {
   console.log('   Prefer: atris plan');
   console.log('');
   visualizeCmd();
+} else if (command === 'autopilot') {
+  const initialIdea = process.argv.slice(3).join(' ').trim() || null;
+  autopilotCmd(initialIdea)
+    .then(() => process.exit(0))
+    .catch((error) => {
+      if (error && error.__autopilotAbort) {
+        console.log('\nAutopilot cancelled.');
+        process.exit(0);
+      }
+      console.error(`✗ Autopilot failed: ${error.message || error}`);
+      process.exit(1);
+    });
 } else if (command === 'brainstorm') {
   brainstormCmd()
     .then(() => process.exit(0))

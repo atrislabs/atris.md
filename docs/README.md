@@ -8,7 +8,7 @@ Documentation for the ATRIS system: idea → build → ship.
 
 > ⚠️ **DEPRECATED:** This documentation is outdated. Use `atris/features/` instead.
 >
-> See `atris/features/README.md` for current documentation.
+> See `atris/features/README.md` (and `TODO.md` in your project) for current documentation and workflow.
 
 **Old structure (deprecated):**
 ```

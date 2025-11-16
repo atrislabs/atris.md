@@ -5,6 +5,7 @@ const { getLogPath, ensureLogDirectory, createLogFile } = require('../lib/journa
 const { loadConfig } = require('../utils/config');
 const { loadCredentials } = require('../utils/auth');
 const { apiRequestJson } = require('../utils/api');
+const { planAtris, doAtris, reviewAtris } = require('./workflow');
 
 async function brainstormAtris() {
   const targetDir = path.join(process.cwd(), 'atris');
@@ -1002,9 +1003,8 @@ async function autopilotAtris(initialIdea = null) {
         // ========================================
         console.log('[STATE:LAUNCHER]');
         console.log('[5/5] 🚀 Launch — Launcher shipping...');
-        launchAtris();
+        console.log('   ✓ Launch instructions are available via "atris" and your journal.');
         updateWorkflowState(workflowFile, 'LAUNCHER', iteration);
-        console.log('   ✓ Launch prompt displayed to agent');
         console.log('   ✓ Workflow state updated: [STATE:LAUNCHER]\n');
 
         recordAutopilotSuccess(
@@ -1286,5 +1286,6 @@ function recordBrainstormSession(
 
 
 module.exports = {
-  brainstormAtris
+  brainstormAtris,
+  autopilotAtris
 };
