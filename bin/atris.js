@@ -141,6 +141,63 @@ function showHelp() {
   console.log('');
 }
 
+function showPlanHelp() {
+  console.log('');
+  console.log('Usage: atris plan [--execute]');
+  console.log('');
+  console.log('Description:');
+  console.log('  Activate the Navigator agent to plan work.');
+  console.log('  Reads your journal Inbox, TODO.md, MAP.md, and features/, then prints a');
+  console.log('  visualization + build spec instructions for your coding agent.');
+  console.log('');
+  console.log('Options:');
+  console.log('  --execute   Run in agent mode via Atris cloud (requires login + agent).');
+  console.log('');
+}
+
+function showDoHelp() {
+  console.log('');
+  console.log('Usage: atris do [--execute]');
+  console.log('');
+  console.log('Description:');
+  console.log('  Activate the Executor agent to build tasks.');
+  console.log('  Reads TODO.md and features/*/build.md, then prints step-by-step');
+  console.log('  execution instructions (and, in agent mode, edits code + runs commands).');
+  console.log('');
+  console.log('Options:');
+  console.log('  --execute   Run in agent mode via Atris cloud (requires login + agent).');
+  console.log('');
+}
+
+function showReviewHelp() {
+  console.log('');
+  console.log('Usage: atris review [--execute]');
+  console.log('');
+  console.log('Description:');
+  console.log('  Activate the Validator agent to verify recent changes.');
+  console.log('  Reads TODO.md, MAP.md, and today\'s journal, then prints a validation');
+  console.log('  checklist (and, in agent mode, runs tests and updates docs).');
+  console.log('');
+  console.log('Options:');
+  console.log('  --execute   Run in agent mode via Atris cloud (requires login + agent).');
+  console.log('');
+}
+
+function showAutopilotHelp() {
+  console.log('');
+  console.log('Usage: atris autopilot [idea]');
+  console.log('');
+  console.log('Description:');
+  console.log('  Run a guided plan → do → review loop around a single idea or current TODOs.');
+  console.log('  In auto mode, it will:');
+  console.log('    - Add the idea to today\'s Inbox');
+  console.log('    - Define success criteria');
+  console.log('    - Generate .atris-workflow.json');
+  console.log('    - Walk through Navigator, Executor, and Validator prompts');
+  console.log('    - Finish with a launch summary for you to review.');
+  console.log('');
+}
+
 // Check if this is a known command or natural language input
 const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'brainstorm', 'autopilot', 'plan', 'do', 'review',
                        'agent', 'chat', 'login', 'logout', 'whoami', 'update', 'version', 'help'];
@@ -226,7 +283,12 @@ if (command === 'init') {
   console.log('');
   visualizeCmd();
 } else if (command === 'autopilot') {
-  const initialIdea = process.argv.slice(3).join(' ').trim() || null;
+  const args = process.argv.slice(3);
+  if (args.includes('--help') || args.includes('-h')) {
+    showAutopilotHelp();
+    process.exit(0);
+  }
+  const initialIdea = args.join(' ').trim() || null;
   autopilotCmd(initialIdea)
     .then(() => process.exit(0))
     .catch((error) => {
@@ -245,6 +307,11 @@ if (command === 'init') {
       process.exit(1);
     });
 } else if (command === 'plan') {
+  const args = process.argv.slice(3);
+  if (args.includes('--help') || args.includes('-h')) {
+    showPlanHelp();
+    process.exit(0);
+  }
   planCmd()
     .then(() => process.exit(0))
     .catch((error) => {
@@ -252,6 +319,11 @@ if (command === 'init') {
       process.exit(1);
     });
 } else if (command === 'do') {
+  const args = process.argv.slice(3);
+  if (args.includes('--help') || args.includes('-h')) {
+    showDoHelp();
+    process.exit(0);
+  }
   doCmd()
     .then(() => process.exit(0))
     .catch((error) => {
@@ -259,6 +331,11 @@ if (command === 'init') {
       process.exit(1);
     });
 } else if (command === 'review') {
+  const args = process.argv.slice(3);
+  if (args.includes('--help') || args.includes('-h')) {
+    showReviewHelp();
+    process.exit(0);
+  }
   reviewCmd()
     .then(() => process.exit(0))
     .catch((error) => {
