@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working on the 
 
 ## What ATRIS Is
 
-ATRIS is a Node.js CLI package (v1.5.5) that transforms codebases into AI-navigable workspaces. Instead of "where is the auth logic?" you get exact file:line answers in seconds.
+ATRIS is a Node.js CLI package (v2.0.0) that transforms codebases into AI-navigable workspaces. Instead of "where is the auth logic?" you get exact file:line answers in seconds.
 
 **The system works like this:**
 - Users run `atris init` → creates `atris/` folder with templates
@@ -364,7 +364,7 @@ These are anti-patterns. Don't do them:
 - **atris/GETTING_STARTED.md** — User onboarding guide
 - **atris/MAP.md** — Navigation guide with file:line references
 - **atris/agent_team/*.md** — Agent specs (navigator, executor, validator)
-- **package.json** — Version (1.5.5), bin config, no external dependencies
+- **package.json** — Version (2.0.0), bin config, no external dependencies
 - **bin/atris.js** — Complete CLI (all commands, 3,314 lines)
 
 ---
