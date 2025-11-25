@@ -198,40 +198,7 @@ function showAutopilotHelp() {
   console.log('');
 }
 
-// Check if this is a known command or natural language input
-const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'brainstorm', 'autopilot', 'plan', 'do', 'review',
-                       'agent', 'chat', 'login', 'logout', 'whoami', 'update', 'version', 'help'];
-
-// If no command OR command is not recognized, treat as natural language
-if (!command || !knownCommands.includes(command)) {
-  const userInput = process.argv.slice(2).join(' ');
-
-  if (!userInput) {
-    // Cold start - no input, show context
-    atrisDevEntry()
-      .then(() => process.exit(0))
-      .catch((error) => {
-        console.error(`✗ Error: ${error.message || error}`);
-        process.exit(1);
-      });
-  } else {
-    // Hot start - user provided task description
-    atrisDevEntry(userInput)
-      .then(() => process.exit(0))
-      .catch((error) => {
-        console.error(`✗ Error: ${error.message || error}`);
-        process.exit(1);
-      });
-  }
-  return;
-}
-
-if (command === 'help' || command === '--help' || command === '-h') {
-  showHelp();
-  process.exit(0);
-}
-
-// Command handlers - using modular commands where available
+// Command handlers - must load BEFORE interactiveEntry() is called (TDZ issue)
 const { initAtris: initCmd } = require('../commands/init');
 const { syncAtris: syncCmd } = require('../commands/sync');
 const { logAtris: logCmd } = require('../commands/log');
@@ -243,6 +210,122 @@ const { visualizeAtris: visualizeCmd } = require('../commands/visualize');
 const { brainstormAtris: brainstormCmd, autopilotAtris: autopilotCmd } = require('../commands/brainstorm');
 const { statusAtris: statusCmd } = require('../commands/status');
 const { analyticsAtris: analyticsCmd } = require('../commands/analytics');
+
+// Check if this is a known command or natural language input
+const knownCommands = ['init', 'log', 'status', 'analytics', 'visualize', 'brainstorm', 'autopilot', 'plan', 'do', 'review',
+                       'agent', 'chat', 'login', 'logout', 'whoami', 'update', 'version', 'help'];
+
+// If no command OR command is not recognized, treat as natural language
+if (!command || !knownCommands.includes(command)) {
+  const userInput = process.argv.slice(2).join(' ');
+
+  // Launch interactive entry (the "Performance")
+  interactiveEntry(userInput)
+    .then(() => process.exit(0))
+    .catch((error) => {
+      console.error(`✗ Error: ${error.message || error}`);
+      process.exit(1);
+    });
+  return;
+}
+
+if (command === 'help' || command === '--help' || command === '-h') {
+  showHelp();
+  process.exit(0);
+}
+
+async function interactiveEntry(userInput) {
+  const workspaceDir = process.cwd();
+  const state = detectWorkspaceState(workspaceDir);
+  const context = loadContext(workspaceDir);
+
+  // Case 1: Hot Start (User provided input: "atris fix bug")
+  if (userInput) {
+    console.log('');
+    console.log(`✨ Request: "${userInput}"`);
+    console.log('   Initializing Navigator...');
+    await planCmd(userInput);
+    return;
+  }
+
+  // Case 2: Cold Start (User typed "atris")
+  // We present a "Warm Up" interface based on state
+  
+  console.log('');
+  console.log('┌─────────────────────────────────────────────────────────────┐');
+  console.log('│ ATRIS                                                       │');
+  console.log('└─────────────────────────────────────────────────────────────┘');
+  
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const ask = (q) => new Promise(r => rl.question(q, r));
+
+  // Logic: Detect State -> Offer "Path of Least Resistance"
+
+  // State: Fresh Install
+  if (state.state === 'fresh') {
+    console.log('\n👋 Welcome to ATRIS.');
+    console.log('   This folder is not initialized yet.');
+    const answer = await ask('\n   Initialize project structure? [Y/n] ');
+    rl.close();
+    if (answer.toLowerCase() === '' || answer.toLowerCase() === 'y') {
+      initCmd();
+    } else {
+      console.log('Cancelled.');
+    }
+    return;
+  }
+
+  // State: In-Progress Work
+  if (context.inProgressFeatures.length > 0) {
+    const active = context.inProgressFeatures[0].replace('.md', '');
+    console.log(`\n🔥 Active Feature: ${active}`);
+    const answer = await ask(`   Resume building this? [Y/n] `);
+    if (answer.toLowerCase() === '' || answer.toLowerCase() === 'y') {
+      console.log('\n🚀 Starting Executor...');
+      rl.close();
+      await doCmd();
+      return;
+    }
+  }
+
+  // State: Inbox Items
+  if (context.hasInbox && context.inboxItems.length > 0) {
+    console.log(`\n📥 Inbox: You have ${context.inboxItems.length} unprocessed items.`);
+    const answer = await ask(`   Process into a plan? [Y/n] `);
+    if (answer.toLowerCase() === '' || answer.toLowerCase() === 'y') {
+      console.log('\n🚀 Starting Navigator...');
+      rl.close();
+      await planCmd();
+      return;
+    }
+  }
+
+  // State: Idle / Default
+  console.log('\n✨ Canvas is clean. What are we building?');
+  console.log('   (Type a request, "brainstorm", "status", or press Enter to exit)');
+  
+  const request = await ask('\n> ');
+  rl.close();
+
+  if (!request.trim()) {
+    console.log('See you later! 👋');
+    return;
+  }
+
+  if (request.toLowerCase() === 'brainstorm') {
+    await brainstormCmd();
+  } else if (request.toLowerCase() === 'status') {
+    await statusCmd();
+  } else {
+    // Treat as new plan request
+    console.log('\n🚀 Starting Navigator...');
+    await planCmd(request);
+  }
+}
 
 if (command === 'init') {
   initCmd();

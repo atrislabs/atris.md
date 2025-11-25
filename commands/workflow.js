@@ -197,6 +197,10 @@ async function planAtris() {
     userPrompt += `   - Add tasks to Backlog section\n`;
     userPrompt += `   - Format: Task number, description, file refs, acceptance criteria\n`;
     userPrompt += `   - Quality over speed - tasks must be perfect for systems player execution\n\n`;
+    userPrompt += `STEP 4: Create Validation Artifact (validate.md)\n`;
+    userPrompt += `   - You MUST create a validate.md file for the feature.\n`;
+    userPrompt += `   - This file acts as the executable simulation script for the Validator.\n`;
+    userPrompt += `   - Include verifiable steps (e.g., 'Run curl...', 'Check DB...').\n\n`;
     userPrompt += `Start planning now. Read MAP.md for file references.`;
 
     console.log('');
@@ -608,11 +612,40 @@ async function reviewAtris() {
     taskContexts = fs.readFileSync(taskFilePath, 'utf8');
   }
 
-  // Read journal for timestamp context
+  // Read journal for timestamp context (History)
   const { logFile, dateFormatted } = getLogPath();
-  let journalPath = '';
+  let journalHistory = '';
+  
+  // Load today's log
   if (fs.existsSync(logFile)) {
-    journalPath = path.relative(process.cwd(), logFile);
+    journalHistory += `## TODAY (${dateFormatted}):\n` + fs.readFileSync(logFile, 'utf8') + '\n\n';
+  }
+
+  // Load previous 3 days of logs for Drift Detection
+  // (We need to find them in the logs directory)
+  const targetLogsDir = path.join(targetDir, 'logs');
+  if (fs.existsSync(targetLogsDir)) {
+    // Simple recursive search for last 3 .md files
+    const allLogs = [];
+    const yearDirs = fs.readdirSync(targetLogsDir).filter(d => /^\d{4}$/.test(d));
+    for (const year of yearDirs) {
+      const yearPath = path.join(targetLogsDir, year);
+      if (fs.statSync(yearPath).isDirectory()) {
+        const files = fs.readdirSync(yearPath).filter(f => f.endsWith('.md') && f !== path.basename(logFile));
+        files.forEach(f => allLogs.push(path.join(yearPath, f)));
+      }
+    }
+    // Sort desc, take top 3
+    allLogs.sort().reverse();
+    const recentLogs = allLogs.slice(0, 3);
+    
+    if (recentLogs.length > 0) {
+      journalHistory += `## RECENT HISTORY (Drift Check):\n`;
+      for (const log of recentLogs) {
+        journalHistory += `--- ${path.basename(log)} ---\n`;
+        journalHistory += fs.readFileSync(log, 'utf8').substring(0, 1000) + '\n... (truncated)\n\n'; // Read first 1kb
+      }
+    }
   }
 
   const mapFile = path.join(targetDir, 'MAP.md');
@@ -648,7 +681,9 @@ async function reviewAtris() {
   console.log('');
   console.log('─────────────────────────────────────────────────────────────');
   console.log('');
-  console.log('📅 JOURNAL: ' + (journalPath || 'Not found'));
+  console.log('📅 JOURNAL HISTORY (Drift Detection):');
+  console.log('   Reading past logs to check for recurring friction...');
+  // We don't print the full history to console to avoid noise, but it's in the prompt
   console.log('');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('📋 INSTRUCTION PROMPT FOR YOUR CODING AGENT:');
@@ -660,8 +695,9 @@ async function reviewAtris() {
   console.log('  1. Ultrathink (say "ultrathink", think 3 times)');
   console.log('  2. Check requirements → build → edge cases → errors → integration');
   console.log('  3. Run tests (unit, integration, linting, type checking)');
-  console.log('  4. If issues found: report → "atris do" fixes → "atris review" again');
-  console.log('  5. Repeat until: "✅ All good. Ready for human testing."');
+  console.log('  4. Detect Drift (check recent logs for repeated struggle)');
+  console.log('  5. If issues found: report → "atris do" fixes → "atris review" again');
+  console.log('  6. Repeat until: "✅ All good. Ready for human testing."');
   console.log('');
   console.log('Your job:');
   console.log('  • Verify everything works');
@@ -669,7 +705,7 @@ async function reviewAtris() {
   console.log('  • Update docs if needed');
   console.log('  • Clean TODO.md (move completed tasks)');
   console.log('  • Extract learnings for journal');
-  console.log('  • Only approve when truly ready for human testing');
+  console.log('  • PROPOSE TOOLS if you see repetition (Evolution)');
   console.log('');
   console.log('The cycle: do → review → [issues] → do → review → ✅ Ready');
   console.log('');
@@ -711,11 +747,16 @@ async function reviewAtris() {
     userPrompt += `  1. Ultrathink (say "ultrathink", think 3 times)\n`;
     userPrompt += `  2. Check requirements → build → edge cases → errors → integration\n`;
     userPrompt += `  3. Run tests (unit, integration, linting, type checking)\n`;
-    userPrompt += `  4. If issues found: report → "atris do" fixes → "atris review" again\n`;
-    userPrompt += `  5. Repeat until: "✅ All good. Ready for human testing."\n\n`;
+    userPrompt += `  4. Detect Drift: Scan the Journal History below. Do you see the same friction 2x?\n`;
+    userPrompt += `  5. If issues found: report → "atris do" fixes → "atris review" again\n`;
+    userPrompt += `  6. Repeat until: "✅ All good. Ready for human testing."\n\n`;
     
     if (taskContexts) {
       userPrompt += `## TODO.md:\n${taskContexts}\n\n`;
+    }
+
+    if (journalHistory) {
+      userPrompt += `## JOURNAL HISTORY (For Evolution/Drift Check):\n${journalHistory}\n\n`;
     }
     
     userPrompt += `Your job:\n`;
@@ -724,7 +765,7 @@ async function reviewAtris() {
     userPrompt += `  • Update docs if needed (MAP.md, TODO.md)\n`;
     userPrompt += `  • Clean TODO.md (move completed tasks to Completed section, then delete)\n`;
     userPrompt += `  • Extract learnings for journal\n`;
-    userPrompt += `  • Only approve when truly ready for human testing\n\n`;
+    userPrompt += `  • EVOLUTION: If you see drift in the logs, propose a tool upgrade.\n\n`;
     userPrompt += `The cycle: do → review → [issues] → do → review → ✅ Ready\n`;
     userPrompt += `Start validating now. Read files, run tests, verify implementation.`;
 

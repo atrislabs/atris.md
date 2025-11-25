@@ -287,12 +287,32 @@ function initAtris() {
 
   // Create features directory and README
   const featuresDir = path.join(targetDir, 'features');
+  const templatesDir = path.join(featuresDir, '_templates');
+  
   if (!fs.existsSync(featuresDir)) {
     fs.mkdirSync(featuresDir, { recursive: true });
     const featuresReadme = path.join(featuresDir, 'README.md');
-    fs.writeFileSync(featuresReadme, '# Features\n\nThis directory tracks all features built using the atrisDev protocol.\n\nEach feature has:\n- `[feature-name]/idea.md` - Problem, solution, diagrams, success criteria\n- `[feature-name]/build.md` - Implementation plan, files changed, testing\n\n---\n\n## Features Built\n\n*Features will appear here as you build them.*\n');
+    fs.writeFileSync(featuresReadme, '# Features\n\nThis directory tracks all features built using the atrisDev protocol.\n\nEach feature has:\n- `[feature-name]/idea.md` - Problem, solution, diagrams, success criteria\n- `[feature-name]/build.md` - Implementation plan, files changed, testing\n- `[feature-name]/validate.md` - End-to-end simulation script\n\n---\n\n## Features Built\n\n*Features will appear here as you build them.*\n');
     console.log('✓ Created features/ directory with README');
   }
+
+  // Create _templates/validate.md.template if not exists
+  if (!fs.existsSync(templatesDir)) {
+    fs.mkdirSync(templatesDir, { recursive: true });
+  }
+  const validateTemplateSource = path.join(__dirname, '..', 'atris', 'features', '_templates', 'validate.md.template');
+  const validateTemplateTarget = path.join(templatesDir, 'validate.md.template');
+  
+  if (fs.existsSync(validateTemplateSource)) {
+    fs.copyFileSync(validateTemplateSource, validateTemplateTarget);
+    console.log('✓ Created features/_templates/validate.md.template');
+  } else {
+    // Fallback if source not found (for safety)
+    const fallbackContent = `# Validation — [Feature Name]\n\n> **Role:** System Validation Script\n> **Executor:** Validator Agent\n> **Instructions:** Run these steps sequentially. If ANY step fails, the feature is broken.\n\n---\n\n## 1. Environment Check\n- [ ] **Pre-flight:**\n  - Command: \`npm run type-check\` (or relevant)\n  - Expect: No errors\n\n## 2. Simulation Steps (The "Real" Test)\n\n### Step 1: [Name]\n- **Action:** [Exact command]\n- **Expect:** [Exact output regex]\n\n---\n\n**Status:** [Pending | Verified]\n`;
+    fs.writeFileSync(validateTemplateTarget, fallbackContent);
+    console.log('✓ Created features/_templates/validate.md.template (fallback)');
+  }
+
 
   const navigatorSource = path.join(__dirname, '..', 'atris', 'agent_team', 'navigator.md');
   const executorSource = path.join(__dirname, '..', 'atris', 'agent_team', 'executor.md');
