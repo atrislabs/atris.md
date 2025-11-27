@@ -146,7 +146,7 @@ ATRIS ships with pre-built agent templates in `/atris/agent_team/` (copied durin
 
 ---
 
-## Phase 3: Task Context System (TODO.md in `/atris/`, formerly `TASK_CONTEXTS.md`)
+## Phase 3: Task Context System (TODO.md in `/atris/`, formerly `TODO.md`)
 
 **Goal:** Automatic task extraction with exact file/component context, so agents never guess.
 
@@ -218,7 +218,7 @@ ATRIS ships with pre-built agent templates in `/atris/agent_team/` (copied durin
 
 3. Output: `/atris/TODO.md` (maintains and evolves as system changes)
 
-4. On each MAP.md update, regenerate TASK_CONTEXTS.md to reflect new state
+4. On each MAP.md update, regenerate TODO.md to reflect new state
 
 ---
 

@@ -9,7 +9,7 @@
 - **Goal:** Keep local markdown artifacts (`atris/` folder) in sync with the published `atris` package version.
 - **Today:** `atris update` copies the latest `atris.md`, `GETTING_STARTED.md`, and agent templates into your project.
 - **Later:** Add optional cloud sync so:
-  - Local `logs/`, `MAP.md`, and `TASK_CONTEXTS.md` can be mirrored to a remote workspace.
+  - Local `logs/`, `MAP.md`, and `TODO.md` can be mirrored to a remote workspace.
   - Agents can collaborate asynchronously against the same journal + MAP.
   - Conflicts are resolved via markdown-aware merges (section-level, not whole-file overwrites).
 
@@ -40,7 +40,7 @@ validator: atris/agent_team/validator.md
 launcher: atris/agent_team/launcher.md
 
 entry_workflow:
-  - navigator: plan feature + update TASK_CONTEXTS.md
+  - navigator: plan feature + update TODO.md
   - executor: build tasks
   - validator: test + update MAP.md
   - launcher: summarize + move journal items to Completed ✅

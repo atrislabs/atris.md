@@ -171,7 +171,7 @@ Show final ASCII summary
     ↓
 Human approves ("ship it")
     ↓
-Agent updates (MAP.md, TASK_CONTEXTS.md, suggests next)
+Agent updates (MAP.md, TODO.md, suggests next)
 ```
 
 **Key:** Human only sees two things:
@@ -209,7 +209,7 @@ Everything else (parsing, agent layer generation) happens silently.
 
 **Docs stay fresh**
 - Agent auto-updates everything after approval
-- MAP.md, TASK_CONTEXTS.md, next steps all in sync
+- MAP.md, TODO.md, next steps all in sync
 
 **System evolves**
 - Human modifies agent layer (or parser regenerates from human layer)

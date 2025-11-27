@@ -53,7 +53,7 @@ When the user describes what they want to build, follow these steps:
 **Key files:**
 - `atris/PERSONA.md` - Communication style (READ THIS FIRST)
 - `atris/MAP.md` - Navigation guide (where is X?)
-- `atris/TASK_CONTEXTS.md` - Active tasks (delete when done)
+- `atris/TODO.md` - Active tasks (delete when done)
 - `atris.md` - Full atrisDev protocol (Phase 5.2)
 - `atris/agent_team/*.md` - Agent specs
 
@@ -76,7 +76,7 @@ When `atris init` runs, it creates:
 atris/
 ├── atris.md              (blueprint spec - copied from package)
 ├── MAP.md                (navigation guide - populated by AI agents)
-├── TASK_CONTEXTS.md      (task bank - populated by AI agents)
+├── TODO.md      (task bank - populated by AI agents)
 └── agent_team/
     ├── navigator.md      (system navigator spec)
     ├── executor.md       (task executor spec)
@@ -139,7 +139,7 @@ Located in `bin/atris.js:27-100`
 3. Copies source `atris.md` from package installation to `atris/atris.md`
 4. Creates placeholder files for:
    - MAP.md
-   - TASK_CONTEXTS.md
+   - TODO.md
    - agent_team/navigator.md
    - agent_team/executor.md
    - agent_team/validator.md
@@ -164,7 +164,7 @@ Located in root: `atris.md:1-276`
 **5-Phase System:**
 1. **Phase 1**: Generate MAP.md - Universal navigation with file:line references
 2. **Phase 2**: Spawn 3 agent specs (navigator, executor, validator)
-3. **Phase 3**: Auto-generate TASK_CONTEXTS.md from MAP insights
+3. **Phase 3**: Auto-generate TODO.md from MAP insights
 4. **Phase 4**: Activation - agents reference artifacts automatically
 5. **Phase 5**: Future roadmap (sync, sessions, crew orchestration)
 
@@ -192,7 +192,7 @@ Located in root: `atris.md:1-276`
 - `atris.md:1-276` - Complete ATRIS specification
   - `atris.md:11-44` - Phase 1 (MAP.md generation)
   - `atris.md:46-127` - Phase 2 (3 agent specs)
-  - `atris.md:129-181` - Phase 3 (TASK_CONTEXTS.md)
+  - `atris.md:129-181` - Phase 3 (TODO.md)
   - `atris.md:183-211` - Phase 4 (Activation & handoff)
 - `package.json:1-19` - Package metadata and configuration
 - `README.md:1-4` - Brief project description

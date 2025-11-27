@@ -42,7 +42,7 @@
 ### L4: Status Command Provides Instant System Visibility
 **Context:** T16 `atris status` - shows active tasks, inbox items, recent completions at a glance
 
-**Lesson:** Single command that aggregates state from multiple files eliminates context switching. User doesn't need to open TASK_CONTEXTS.md, journal, etc. Just run `atris status` and see everything.
+**Lesson:** Single command that aggregates state from multiple files eliminates context switching. User doesn't need to open TODO.md, journal, etc. Just run `atris status` and see everything.
 
 **Pattern:** Aggregation commands > opening multiple files. Parse once, display concisely.
 

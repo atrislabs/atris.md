@@ -26,7 +26,7 @@ ATRIS is a Node.js CLI package (v2.0.0) that transforms codebases into AI-naviga
 
 **The system works like this:**
 - Users run `atris init` → creates `atris/` folder with templates
-- AI agent reads `atris/atris.md` spec → generates MAP.md, agent specs, TASK_CONTEXTS.md
+- AI agent reads `atris/atris.md` spec → generates MAP.md, agent specs, TODO.md
 - MAP.md becomes the single source of truth (all agents reference it)
 - Daily logs in `atris/logs/YYYY/YYYY-MM-DD.md` track journal, inbox, completions
 - `atris` CLI commands orchestrate the navigator → executor → validator workflow
@@ -52,7 +52,7 @@ ATRIS is a Node.js CLI package (v2.0.0) that transforms codebases into AI-naviga
 **atris.md** (master spec in root) — The blueprint. Copied to user projects as `atris/atris.md`. Defines:
 - Phase 1: MAP.md generation rules
 - Phase 2: Navigator/executor/validator agent specs
-- Phase 3: TODO.md structure (task context system, formerly `TASK_CONTEXTS.md`)
+- Phase 3: TODO.md structure (task context system, formerly `TODO.md`)
 - Phase 4: Activation & validation checklists
 - Phase 5: Future roadmap (sync, crew orchestration)
 
@@ -63,7 +63,7 @@ ATRIS is a Node.js CLI package (v2.0.0) that transforms codebases into AI-naviga
 - Critical files marked ⭐
 - Entry points and architecture flows
 
-**atris/TODO.md** (task bank, formerly `TASK_CONTEXTS.md`) — AI-generated from MAP.md insights. Format:
+**atris/TODO.md** (task bank, formerly `TODO.md`) — AI-generated from MAP.md insights. Format:
 - **Backlog** — Unclaimed tasks ready for work
 - **In Progress** — Tasks claimed with "Claimed by: [Name] at [Time]"
 - Target state: 0 (all tasks deleted after completion by validator)
@@ -212,7 +212,7 @@ project/
 │   ├── GETTING_STARTED.md    (user guide)
 │   ├── PERSONA.md            (personality/workflow)
 │   ├── MAP.md                (navigation - AI generates)
-│   ├── TASK_CONTEXTS.md      (task bank - AI generates)
+│   ├── TODO.md      (task bank - AI generates)
 │   ├── logs/
 │   │   └── 2025/
 │   │       ├── 2025-10-23.md (daily journals)
@@ -272,7 +272,7 @@ This is how the system is meant to be used:
 2. Navigator Plans
    └─ Run: atris plan (or atris brainstorm → atris visualize)
    └─ AI reads Inbox + MAP.md
-   └─ Output: Creates tasks in TASK_CONTEXTS.md Backlog
+   └─ Output: Creates tasks in TODO.md Backlog
 
 3. Visualize & Approve
    └─ Run: atris visualize
@@ -290,11 +290,11 @@ This is how the system is meant to be used:
    └─ Run: atris review
    └─ AI ultrathinks (3x before deciding)
    └─ Runs tests, fixes bugs, updates docs
-   └─ Cleans up: moves task to Completed, deletes from TASK_CONTEXTS.md
+   └─ Cleans up: moves task to Completed, deletes from TODO.md
    └─ Output: Tests pass, docs fresh, system clean
 
 6. Target State
-   └─ All sections in TASK_CONTEXTS.md empty (tasks deleted)
+   └─ All sections in TODO.md empty (tasks deleted)
    └─ Inbox items moved to Completed
    └─ Journal updated with lessons learned
 ```
@@ -307,7 +307,7 @@ This is how the system is meant to be used:
 2. **Markdown is the Interface** — All outputs are human-readable markdown, no binary formats.
 3. **Zero External Dependencies** — CLI uses only Node.js built-ins (fs, path, child_process, readline, https, crypto).
 4. **Folder Structure is a Contract** — `atris/` folder location and subfolder names never change.
-5. **Delete When Done** — Keep workspace clean. Completed tasks deleted from TASK_CONTEXTS.md by validator.
+5. **Delete When Done** — Keep workspace clean. Completed tasks deleted from TODO.md by validator.
 6. **Pareto Over Perfection** — 80/20 mindset. Ship fast, iterate faster. Mistakes are fine if you fix them quickly.
 
 ---
@@ -320,7 +320,7 @@ This is how the system is meant to be used:
 **Q: MAP.md out of sync after architecture change?**
 → Update it manually (you're the validator) or re-run AI with fresh codebase scan
 
-**Q: TASK_CONTEXTS.md growing (tasks not deleted)?**
+**Q: TODO.md growing (tasks not deleted)?**
 → Validator should delete completed tasks. Check completion format in journal
 
 **Q: Token refresh failing?**
@@ -350,9 +350,9 @@ These are anti-patterns. Don't do them:
 ❌ Generate verbose documentation nobody reads
 ❌ Add features "just in case"
 ❌ Make assumptions without checking MAP.md
-❌ Leave TODOs scattered in code (put them in TASK_CONTEXTS.md)
+❌ Leave TODOs scattered in code (put them in TODO.md)
 ❌ Overthink simple problems
-❌ Leave tasks in TASK_CONTEXTS.md after completion
+❌ Leave tasks in TODO.md after completion
 ❌ Modify MAP.md without updating line numbers
 
 ---
