@@ -592,6 +592,65 @@ Contents:
 
 ---
 
+## Phase 5.3: Claude Code Integration
+
+Auto-inject ATRIS context into Claude Code sessions via skills and commands.
+
+### Slash Command Setup
+
+Create `.claude/commands/atris.md`:
+
+```markdown
+---
+description: Activate ATRIS context - loads TODO.md, journal, and persona
+allowed-tools: Read, Bash, Glob, Grep
+---
+
+# ATRIS Activate
+
+Load these files:
+1. @atris/PERSONA.md (communication style)
+2. @atris/TODO.md (current tasks)
+3. @atris/MAP.md (navigation)
+
+Workflow: plan → do → review
+Rules: 3-4 sentences max, ASCII visuals, check MAP.md first
+```
+
+### Skill Setup
+
+Create `.claude/skills/atris/SKILL.md`:
+
+```markdown
+---
+name: atris
+description: ATRIS workspace navigation. Use when user mentions atris, TODO, tasks, MAP.md, or asks "where is X?"
+allowed-tools: Read, Bash, Glob, Grep, Write, Edit
+---
+
+# ATRIS Skill
+
+Detect: Project has `atris/` folder with MAP.md, TODO.md, PERSONA.md
+
+Workflow: Navigator (plan) → Executor (build) → Validator (verify)
+
+Key behaviors:
+- Read PERSONA.md first (3-4 sentences, ASCII visuals)
+- Check MAP.md for file:line refs
+- Update TODO.md (claim tasks, delete when done)
+```
+
+### Checklist
+
+- [ ] Create `.claude/commands/` directory
+- [ ] Create `.claude/skills/atris/` directory
+- [ ] Add `atris.md` command file
+- [ ] Add `SKILL.md` skill file
+- [ ] Test with `/atris` in Claude Code
+- [ ] Verify skill triggers on "atris" or "tasks" mentions
+
+---
+
 ## Phase 6: Future Roadmap (Vision)
 
 **See [`ATRIS_NOTES.md`](./ATRIS_NOTES.md) for full roadmap. Preview:**

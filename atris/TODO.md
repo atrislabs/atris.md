@@ -28,7 +28,7 @@ Tracks active tasks for ATRIS CLI development. Target state = 0.
   - ✅ Created `/atris` slash command
   - ✅ Created atris skill with trigger keywords
 - **Remaining:**
-  - [ ] Test skill auto-detection
+  - [x] Test skill auto-detection
   - [ ] Add to atris.md instructions section
   - [ ] Document for other devs
 
