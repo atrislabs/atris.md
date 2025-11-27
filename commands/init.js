@@ -356,33 +356,67 @@ function initAtris() {
   console.log('✓ Injected project patterns into agent_team specs');
 
   // Create agent instruction files for different tools
-  const agentInstructions = `# atrisDev Protocol
+  const agentInstructions = `# AGENTS.md — Universal Agent Instructions
 
-When the user asks to build/plan/fix/check something, FIRST run:
+> Works with: Claude Code, Cursor, Codex, Windsurf, and any AI coding agent.
+
+## Quick Start
 
 \`\`\`bash
 atris
 \`\`\`
 
-Then follow the instructions in the output.
+Run this first. Follow the output.
+
+## Core Files
+
+| File | Purpose |
+|------|---------|
+| \`atris/PERSONA.md\` | Communication style (read first) |
+| \`atris/TODO.md\` | Current tasks |
+| \`atris/MAP.md\` | Navigation (where is X?) |
 
 ## Workflow
 
-The \`atris\` command will tell you to:
-1. Read atris.md (the full protocol)
-2. Show atris visualization
-3. Wait for approval
-4. Create atris/features/[name]/idea.md + build.md
-5. Execute step by step
-6. Review and update atris/features/README.md
+\`\`\`
+PLAN  → atris plan   (break ideas into tasks)
+BUILD → atris do     (execute tasks)
+CHECK → atris review (verify + cleanup)
+\`\`\`
 
-DO NOT explore the codebase manually. Run \`atris\` first, then follow its instructions.`;
+## Rules
 
-  // .cursorrules for Cursor
+- [ ] 3-4 sentences max per response
+- [ ] Use ASCII visuals for planning
+- [ ] Check MAP.md before touching code
+- [ ] Claim tasks in TODO.md before working
+- [ ] Delete tasks when done
+
+## Anti-patterns
+
+- Don't explore codebase manually (use MAP.md)
+- Don't skip visualization step
+- Don't leave stale tasks
+- Don't write verbose docs
+
+---
+
+**Protocol:** See \`atris/atris.md\` for full spec.`;
+
+  // .cursorrules for Cursor (legacy)
   const cursorRulesFile = path.join(process.cwd(), '.cursorrules');
   if (!fs.existsSync(cursorRulesFile)) {
     fs.writeFileSync(cursorRulesFile, agentInstructions);
     console.log('✓ Created .cursorrules (for Cursor)');
+  }
+
+  // .cursor/rules/atris.mdc for Cursor (new format)
+  const cursorRulesDir = path.join(process.cwd(), '.cursor', 'rules');
+  const cursorMdcFile = path.join(cursorRulesDir, 'atris.mdc');
+  if (!fs.existsSync(cursorMdcFile)) {
+    fs.mkdirSync(cursorRulesDir, { recursive: true });
+    fs.writeFileSync(cursorMdcFile, agentInstructions);
+    console.log('✓ Created .cursor/rules/atris.mdc (for Cursor)');
   }
 
   // AGENTS.md for Codex
@@ -390,6 +424,52 @@ DO NOT explore the codebase manually. Run \`atris\` first, then follow its instr
   if (!fs.existsSync(agentsMdFile)) {
     fs.writeFileSync(agentsMdFile, agentInstructions);
     console.log('✓ Created AGENTS.md (for Codex)');
+  }
+
+  // .claude/commands/atris.md for Claude Code
+  const claudeCommandsDir = path.join(process.cwd(), '.claude', 'commands');
+  const claudeCommandFile = path.join(claudeCommandsDir, 'atris.md');
+  if (!fs.existsSync(claudeCommandFile)) {
+    fs.mkdirSync(claudeCommandsDir, { recursive: true });
+    const claudeCommand = `---
+description: Activate ATRIS context - loads TODO.md, journal, and persona
+allowed-tools: Read, Bash, Glob, Grep
+---
+
+Read @AGENTS.md then run \`atris\` command.
+
+Follow the workflow: plan → do → review
+
+Rules: 3-4 sentences max, ASCII visuals, check MAP.md first.`;
+    fs.writeFileSync(claudeCommandFile, claudeCommand);
+    console.log('✓ Created .claude/commands/atris.md (for Claude Code)');
+  }
+
+  // .claude/skills/atris/SKILL.md for Claude Code
+  const claudeSkillsDir = path.join(process.cwd(), '.claude', 'skills', 'atris');
+  const claudeSkillFile = path.join(claudeSkillsDir, 'SKILL.md');
+  if (!fs.existsSync(claudeSkillFile)) {
+    fs.mkdirSync(claudeSkillsDir, { recursive: true });
+    const claudeSkill = `---
+name: atris
+description: ATRIS workspace navigation. Triggers on: atris, TODO, tasks, MAP.md, backlog, "where is X?"
+allowed-tools: Read, Bash, Glob, Grep, Write, Edit
+---
+
+# ATRIS Skill
+
+Read @AGENTS.md for instructions.
+
+Detect: Project has \`atris/\` folder with MAP.md, TODO.md, PERSONA.md
+
+Workflow: plan → do → review
+
+Key behaviors:
+- Read PERSONA.md (3-4 sentences, ASCII visuals)
+- Check MAP.md for file:line refs
+- Update TODO.md (claim tasks, delete when done)`;
+    fs.writeFileSync(claudeSkillFile, claudeSkill);
+    console.log('✓ Created .claude/skills/atris/SKILL.md (for Claude Code)');
   }
 
   // CLAUDE.md for Claude Code (copy from atris/)
