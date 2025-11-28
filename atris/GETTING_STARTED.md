@@ -43,7 +43,7 @@ The agent will:
 4. Execute step by step
 5. Review and update docs (2-pass validation)
 
-💡 Tip: Use `atris brainstorm` if you're exploring options. Use `atris plan` when ready to build.
+Tip: Use `atris brainstorm` if you're exploring options. Use `atris plan` when ready to build.
 
 **Total time: Start building immediately**
 

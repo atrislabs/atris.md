@@ -434,7 +434,7 @@ After MAP.md generation, agents receive project context injection (framework, ke
 - **C1:** Fixed bidirectional journal sync
   - Problem: Web edits didn't sync to CLI
   - Solution: Added auto-pull when web is newer + local unchanged
-  - Impact: Users can edit on web (mobile) and sync seamlessly
+  - Impact: Users can edit on web (mobile) and changes sync automatically
 
 ## In Progress 🔄
 

@@ -26,11 +26,14 @@ After executor finishes:
 ├─────────────────────────────────────┤
 │ ✓ Matches build.md spec             │
 │ ✓ All tests pass                    │
-│ ✓ No breaking changes                │
+│ ✓ No breaking changes               │
 │ ✓ MAP.md updated (if needed)        │
 │ ✓ Error handling present            │
+│ ✓ Anti-slop check (see below)       │
 └─────────────────────────────────────┘
 ```
+
+**Anti-slop gate:** Run `atris/policies/ANTISLOP.md` checklist on all output. Block if violations.
 
 **Final ASCII:**
 ```

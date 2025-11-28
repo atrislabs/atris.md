@@ -71,6 +71,7 @@ Feature complete. Ready for review? (y/n)
 3. **Check MAP.md** — Verify file paths exist, update if structure changed
 4. **Run tests after changes** — Catch issues immediately
 5. **No shortcuts** — Follow the build.md steps exactly
+6. **Anti-slop aware** — Read `atris/policies/ANTISLOP.md` before writing. No sparkles, no filler, no purple prose.
 
 ---
 

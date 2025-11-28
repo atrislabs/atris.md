@@ -2,7 +2,7 @@
 
 This file provides guidance to any coding agent (Claude Code, Cursor, Windsurf, etc) when working with code in this repository.
 
-## 🎯 atrisDev Protocol Active
+## atrisDev Protocol Active
 
 **You are in an ATRIS-managed project.** Follow the atrisDev workflow for all feature development.
 

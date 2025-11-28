@@ -1,6 +1,6 @@
 {
   "name": "atris",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "atrisDev - A new way to build and manage agents",
   "main": "bin/atris.js",
   "bin": {
@@ -15,7 +15,8 @@
     "atris.md",
     "GETTING_STARTED.md",
     "PERSONA.md",
-    "atris/agent_team/"
+    "atris/agent_team/",
+    "atris/policies/"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
