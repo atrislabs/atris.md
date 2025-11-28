@@ -1,6 +1,6 @@
 {
   "name": "atris",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "description": "atrisDev - A new way to build and manage agents",
   "main": "bin/atris.js",
   "bin": {

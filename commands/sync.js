@@ -14,6 +14,13 @@ function syncAtris() {
     fs.mkdirSync(agentTeamDir, { recursive: true });
   }
 
+  // Ensure policies folder exists
+  const policiesDir = path.join(targetDir, 'policies');
+  if (!fs.existsSync(policiesDir)) {
+    fs.mkdirSync(policiesDir, { recursive: true });
+    console.log('✓ Created atris/policies/ folder');
+  }
+
   const filesToSync = [
     { source: 'atris.md', target: 'atris.md' },
     { source: 'PERSONA.md', target: 'PERSONA.md' },
@@ -22,7 +29,8 @@ function syncAtris() {
     { source: 'atris/agent_team/executor.md', target: 'agent_team/executor.md' },
     { source: 'atris/agent_team/validator.md', target: 'agent_team/validator.md' },
     { source: 'atris/agent_team/launcher.md', target: 'agent_team/launcher.md' },
-    { source: 'atris/agent_team/brainstormer.md', target: 'agent_team/brainstormer.md' }
+    { source: 'atris/agent_team/brainstormer.md', target: 'agent_team/brainstormer.md' },
+    { source: 'atris/policies/ANTISLOP.md', target: 'policies/ANTISLOP.md' }
   ];
 
   let updated = 0;
