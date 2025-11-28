@@ -242,7 +242,7 @@ async function interactiveEntry(userInput) {
   // Case 1: Hot Start (User provided input: "atris fix bug")
   if (userInput) {
     console.log('');
-    console.log(`✨ Request: "${userInput}"`);
+    console.log(`Request: "${userInput}"`);
     console.log('   Initializing Navigator...');
     await planCmd(userInput);
     return;
@@ -305,7 +305,7 @@ async function interactiveEntry(userInput) {
   }
 
   // State: Idle / Default
-  console.log('\n✨ Canvas is clean. What are we building?');
+  console.log('\nCanvas is clean. What are we building?');
   console.log('   (Type a request, "brainstorm", "status", or press Enter to exit)');
   
   const request = await ask('\n> ');
@@ -456,6 +456,13 @@ function initAtris() {
     console.log('✓ Created atris/agent_team/ folder');
   }
 
+  // Create policies/ subfolder
+  const policiesDir = path.join(targetDir, 'policies');
+  if (!fs.existsSync(policiesDir)) {
+    fs.mkdirSync(policiesDir, { recursive: true });
+    console.log('✓ Created atris/policies/ folder');
+  }
+
   // Create placeholder files
   const gettingStartedFile = path.join(targetDir, 'GETTING_STARTED.md');
   const personaFile = path.join(targetDir, 'PERSONA.md');
@@ -517,22 +524,32 @@ function initAtris() {
     console.log('✓ Created agent_team/launcher.md');
   }
 
+  // Copy policies from package
+  const antislopSource = path.join(__dirname, '..', 'atris', 'policies', 'ANTISLOP.md');
+  const antislopFile = path.join(policiesDir, 'ANTISLOP.md');
+  if (!fs.existsSync(antislopFile) && fs.existsSync(antislopSource)) {
+    fs.copyFileSync(antislopSource, antislopFile);
+    console.log('✓ Created policies/ANTISLOP.md');
+  }
+
   // Copy atris.md to the folder
   if (fs.existsSync(sourceFile)) {
     fs.copyFileSync(sourceFile, targetFile);
     console.log('✓ Copied atris.md to atris/ folder');
-    console.log('\n✨ ATRIS initialized! Full structure created:');
+    console.log('\nATRIS initialized. Structure created:');
     console.log('   atris/');
     console.log('   ├── GETTING_STARTED.md (read this first!)');
     console.log('   ├── PERSONA.md (agent personality)');
     console.log('   ├── atris.md (AI agent instructions)');
     console.log('   ├── MAP.md (placeholder)');
     console.log('   ├── TASK_CONTEXTS.md (placeholder)');
-    console.log('   └── agent_team/');
-    console.log('       ├── navigator.md (placeholder)');
-    console.log('       ├── executor.md (placeholder)');
-    console.log('       ├── validator.md (placeholder)');
-    console.log('       └── launcher.md (placeholder)');
+    console.log('   ├── agent_team/');
+    console.log('   │   ├── navigator.md');
+    console.log('   │   ├── executor.md');
+    console.log('   │   ├── validator.md');
+    console.log('   │   └── launcher.md');
+    console.log('   └── policies/');
+    console.log('       └── ANTISLOP.md (output quality checklist)');
     console.log('\nNext steps:');
     console.log('1. Read atris/GETTING_STARTED.md for the full guide');
     console.log('2. Open atris/atris.md and paste it to your AI agent');
@@ -558,6 +575,13 @@ function syncAtris() {
     fs.mkdirSync(agentTeamDir, { recursive: true });
   }
 
+  // Ensure policies folder exists
+  const policiesDir = path.join(targetDir, 'policies');
+  if (!fs.existsSync(policiesDir)) {
+    fs.mkdirSync(policiesDir, { recursive: true });
+    console.log('✓ Created atris/policies/ folder');
+  }
+
   // Files to sync
   const filesToSync = [
     { source: 'atris.md', target: 'atris.md' },
@@ -566,7 +590,8 @@ function syncAtris() {
     { source: 'atris/agent_team/navigator.md', target: 'agent_team/navigator.md' },
     { source: 'atris/agent_team/executor.md', target: 'agent_team/executor.md' },
     { source: 'atris/agent_team/validator.md', target: 'agent_team/validator.md' },
-    { source: 'atris/agent_team/launcher.md', target: 'agent_team/launcher.md' }
+    { source: 'atris/agent_team/launcher.md', target: 'agent_team/launcher.md' },
+    { source: 'atris/policies/ANTISLOP.md', target: 'policies/ANTISLOP.md' }
   ];
 
   let updated = 0;
